@@ -1,0 +1,19 @@
+# C related files
+*.o
+*.lo
+*.so
+*.la
+
+# GNU autotools related files
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+build-aux/
+config.*
+configure
+libtool
+m4/
+*.deps/
+*.dirstamp
+stamp-h1
