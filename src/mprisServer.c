@@ -13,8 +13,6 @@
 #define OBJECT_NAME "/org/mpris/MediaPlayer2"
 #define CURRENT_TRACK -1
 
-//TODO some memory leaks. we dont always close tracks...
-
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
 	"	<interface name='org.mpris.MediaPlayer2'>"
