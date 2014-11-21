@@ -17,11 +17,11 @@
 #include "mprisServer.h"
 #include "logging.h"
 
-int ownerId = 0;
-GThread *mprisThread;
+const GThread *mprisThread;
+const DB_functions_t *deadbeef;
 
 static int onStart() {
-	mprisThread = g_thread_new(NULL, startServer, &ownerId);
+	mprisThread = g_thread_new(NULL, startServer, (void *)deadbeef);
 
 	return 0;
 }
@@ -47,7 +47,7 @@ DB_misc_t plugin = {
 	.plugin.name ="MPRISv2 plugin",
 	.plugin.descr = "Communicate with other applications using D-Bus.",
 	.plugin.copyright =
-			"Copyright (C) 2009-2011 HuangCongyu <huangcongyu2006@gmail.com>\n"
+			"Copyright (C) 2014 Peter Lamby <peterlamby@web.de>\n"
 			"\n"
 			"This program is free software; you can redistribute it and/or\n"
 			"modify it under the terms of the GNU General Public License\n"
@@ -63,7 +63,7 @@ DB_misc_t plugin = {
 			"along with this program; if not, write to the Free Software\n"
 			"Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n"
 	,
-	.plugin.website = "http://code.google.com/p/deadbeef-mpris-plugin/",
+	.plugin.website = "TODO",
 	.plugin.start = onStart,
 	.plugin.stop = onStop,
 	.plugin.connect = NULL,
@@ -74,6 +74,7 @@ DB_misc_t plugin = {
 
 DB_plugin_t * mpris_load (DB_functions_t *ddb) {
 	debug("Loading...");
+	deadbeef = ddb;
 
 	return DB_PLUGIN(&plugin);
 }

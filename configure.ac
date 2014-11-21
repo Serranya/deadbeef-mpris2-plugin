@@ -14,21 +14,21 @@ AM_PROG_AR
 
 LT_INIT
 
-dnl PKG_CHECK_MODULES([LIBDBUS], [dbus-1])
+AC_CHECK_HEADER([stdint.h])
 
-PKG_CHECK_MODULES(GLIB_DEPS, glib-2.0)
-PKG_CHECK_MODULES(GIO_DEPS, gio-2.0)
-PKG_CHECK_MODULES(GTHREAD_DEPS, gthread-2.0)
+PKG_CHECK_MODULES([GLIB_DEPS], [glib-2.0])
+PKG_CHECK_MODULES([GIO_DEPS], [gio-2.0])
+PKG_CHECK_MODULES([GTHREAD_DEPS], [gthread-2.0])
 
 dnl Search for deadbeef installation directory
-AC_PREFIX_PROGRAM(deadbeef)
+AC_PREFIX_PROGRAM([deadbeef])
 if test "x$prefix" != xNone; then
 	PLUGIN_INST="$prefix/lib/deadbeef"
 else
 	dnl Use default if nothing is found:
 	PLUGIN_INST="$ac_default_prefix/lib/deadbeef"
 fi
-AC_SUBST(PLUGIN_INST)
+AC_SUBST([PLUGIN_INST])
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
