@@ -17,8 +17,8 @@
 #include "mprisServer.h"
 #include "logging.h"
 
-const GThread *mprisThread;
-const DB_functions_t *deadbeef;
+static GThread *mprisThread;
+static DB_functions_t *deadbeef;
 
 static int onStart() {
 	mprisThread = g_thread_new(NULL, startServer, (void *)deadbeef);
@@ -32,20 +32,27 @@ static int onStop() {
 	return 0;
 }
 
+//***********************
+//* Handels signals for *
+//* - Playback status   *
+//* - Metadata          *
+//* - Volume            *
+//* - Seeked            *
+//***********************
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
 	switch (id) {
 		case DB_EV_SEEKED:
+			emitSeeked(deadbeef->streamer_get_playpos());
 			break;
 		case DB_EV_SONGCHANGED:
+			emitMetadataChanged(-1, deadbeef);
 			break;
 		case DB_EV_SONGSTARTED:
-			break;
 		case DB_EV_PAUSED:
-			break;
 		case DB_EV_STOP:
-			break;
 		case DB_EV_TOGGLE_PAUSE:
+			// emitPlaybackStatusChanged();
 			break;
 		case DB_EV_VOLUMECHANGED:
 			emitVolumeChanged(deadbeef->volume_get_db());

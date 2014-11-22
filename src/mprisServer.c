@@ -120,7 +120,7 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		debug("get_metadata_v2: url %s", fullurl);
 		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullurl));
 		g_free(fullurl);
-		//unref the track item
+
 		deadbeef->pl_item_unref(track);
 	}
 	tmp = g_variant_builder_end(builder);
@@ -395,6 +395,27 @@ void emitVolumeChanged(float volume) {
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Volume",
 			signal, NULL);
+}
+
+void emitSeeked(float position) {
+	int64_t positionInMicroseconds = position * 1000000.0;
+	debug("Seeked to %" PRId64, positionInMicroseconds);
+	GVariant *signal = g_variant_new("(xs)", positionInMicroseconds, "Position");
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Seeked",
+			signal, NULL);
+}
+
+void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
+	GVariantBuilder builder;
+	g_variant_builder_init(&builder, G_VARIANT_TYPE("(a{sv}s)"));
+
+	GVariant *metadata = getMetadataForTrack(trackId, deadbeef);
+	g_variant_builder_add_value(&builder, metadata);
+	g_variant_builder_add(&builder, "s", "Metadata");
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Metadata",
+			g_variant_builder_end(&builder), NULL);
 }
 
 static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
