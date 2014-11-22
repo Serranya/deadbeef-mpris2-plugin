@@ -26,5 +26,12 @@ the Code from the original plugin.
 	interface.
 - The optional "DesktopEntry" property of the org.mpris.MediaPlayer2 interface.
 
+===== How to install =====
+- git clone https://github.com/Serranya/deadbeef-mpris2-plugin.git
+- cd deadbeef-mpris2-plugin
+- autoreconf --install
+- ./configure
+- make install
+
 ===== Contributing =====
 Just use common sense...
