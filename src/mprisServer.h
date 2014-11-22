@@ -4,4 +4,6 @@
 void* startServer(void*);
 void stopServer();
 
+void emitVolumeChanged(float);
+
 #endif

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -11,6 +12,7 @@
 
 #define BUS_NAME "org.mpris.MediaPlayer2.DeaDBeeF"
 #define OBJECT_NAME "/org/mpris/MediaPlayer2"
+#define PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
 #define CURRENT_TRACK -1
 
 static const char xmlForNode[] =
@@ -66,7 +68,8 @@ struct nodeInfoAndDeadbeef {
 	DB_functions_t *deadbeef;
 };
 
-GMainLoop *loop;
+static GDBusConnection *globalConnection = NULL;
+static GMainLoop *loop;
 
 GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 	int id;
@@ -91,7 +94,7 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		g_sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", id);
 		debug("get_metadata_v2: mpris:trackid %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
-		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000000.0);
+		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000);
 		debug("get_metadata_v2: length %d", duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%b");
@@ -207,6 +210,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		const char *interfaceName, const char *methodName, GVariant *parameters, GDBusMethodInvocation *invocation,
 		void *userData) {
 	debug("Method call on Player interface. sender: %s, methodName %s", sender, methodName);
+	debug("Parameter signature is %s", g_variant_get_type_string (parameters));
 	DB_functions_t *deadbeef = userData;
 
 	if (strcmp(methodName, "Next") == 0) {
@@ -229,10 +233,26 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_PLAY_CURRENT, 0, 0, 0);
 	} else if (strcmp(methodName, "Seek") == 0) {
-		debug("Seeking not supported");
-		//TODO find out how to seek
-		g_dbus_method_invocation_return_error(invocation, G_DBUS_ERROR, G_DBUS_ERROR_NOT_SUPPORTED,
-					"Method %s.%s not supported", interfaceName, methodName);
+		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+
+		if (track != NULL) {
+			float durationInMilliseconds = deadbeef->pl_get_item_duration(track) * 1000.0;
+			float positionInMilliseconds= deadbeef->streamer_get_playpos() * 1000.0;
+			int64_t offsetInMicroseconds;
+			g_variant_get(parameters, "(x)", &offsetInMicroseconds);
+			float offsetInMilliseconds = offsetInMicroseconds / 1000.0;
+
+			float newPositionInMilliseconds = positionInMilliseconds + offsetInMilliseconds;
+			if (newPositionInMilliseconds < 0) {
+				newPositionInMilliseconds = 0;
+			} else if (newPositionInMilliseconds > durationInMilliseconds) {
+				deadbeef->sendmessage(DB_EV_NEXT, 0, 0, 0);
+			} else {
+				deadbeef->sendmessage(DB_EV_SEEK, 0, newPositionInMilliseconds, 0);
+			}
+
+			deadbeef->pl_item_unref(track);
+		}
 	} else if (strcmp(methodName, "SetPosition") == 0) {
 		int64_t position = 0;
 		const char *trackId = NULL;
@@ -246,8 +266,8 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
 			char buf[200];
 			sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", playid);
-			if (strcmp(buf, trackId) == 0) {
-				deadbeef->sendmessage(DB_EV_SEEK, 0, position, 0);
+			if (strcmp(buf, trackId) == 0) { //TODO handle different tracks
+				deadbeef->sendmessage(DB_EV_SEEK, 0, position / 1000.0, 0);
 			}
 			deadbeef->pl_item_unref(track);
 			deadbeef->plt_unref(pl);
@@ -317,10 +337,9 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 		if (track == NULL) {
 			result = g_variant_new("(x)", 0);
 		} else {
-			float durationInMilliseconds = deadbeef->pl_get_item_duration(track);
-			float positionInPercent = deadbeef->playback_get_pos();
+			float positionInSeconds = deadbeef->streamer_get_playpos();
 
-			result = g_variant_new("(x)", (uint64_t)(positionInPercent * durationInMilliseconds * 10));
+			result = g_variant_new("(x)", (uint64_t)(positionInSeconds * 1000000.0));
 			deadbeef->pl_item_unref(track);
 		}
 	} else if (strcmp(propertyName, "CanGoNext") == 0) {
@@ -332,7 +351,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	} else if (strcmp(propertyName, "CanPause") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanSeek") == 0) {
-		result = g_variant_new_boolean(FALSE);
+		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanControl") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	}
@@ -366,7 +385,20 @@ static const GDBusInterfaceVTable playerInterfaceVTable = {
 	onPlayerSetPropertyHandler
 };
 
+//***********
+//* SIGNALS *
+//***********
+void emitVolumeChanged(float volume) {
+	volume = (volume * 0.02) + 1;
+	debug("Volume property changed: %f", volume);
+	GVariant *signal = g_variant_new("(ds)", volume, "Volume");
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Volume",
+			signal, NULL);
+}
+
 static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
+	globalConnection = connection;
 	debug("Bus accquired");
 }
 

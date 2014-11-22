@@ -34,6 +34,26 @@ static int onStop() {
 
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
+	switch (id) {
+		case DB_EV_SEEKED:
+			break;
+		case DB_EV_SONGCHANGED:
+			break;
+		case DB_EV_SONGSTARTED:
+			break;
+		case DB_EV_PAUSED:
+			break;
+		case DB_EV_STOP:
+			break;
+		case DB_EV_TOGGLE_PAUSE:
+			break;
+		case DB_EV_VOLUMECHANGED:
+			emitVolumeChanged(deadbeef->volume_get_db());
+			break;
+		default:
+			break;
+	}
+
 	return 0;
 }
 
