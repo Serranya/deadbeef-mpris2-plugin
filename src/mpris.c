@@ -41,6 +41,8 @@ static int onStop() {
 //***********************
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
+	static int lastState = -1;
+
 	switch (id) {
 		case DB_EV_SEEKED:
 			emitSeeked(deadbeef->streamer_get_playpos());
@@ -49,10 +51,28 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			emitMetadataChanged(-1, deadbeef);
 			break;
 		case DB_EV_SONGSTARTED:
+			debug("Playing...");
+			emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING);
+			break;
 		case DB_EV_PAUSED:
+			debug("PlayPause toggled... last state %d", lastState);
+			switch (lastState) {
+				case -1:
+					emitPlaybackStatusChanged(lastState = deadbeef->get_output()->state());
+					break;
+				case OUTPUT_STATE_PLAYING:
+					emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PAUSED);
+					break;
+				case OUTPUT_STATE_PAUSED:
+					emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING);
+					break;
+				default:
+					break;
+			}
+			break;
 		case DB_EV_STOP:
-		case DB_EV_TOGGLE_PAUSE:
-			// emitPlaybackStatusChanged();
+			debug("Stopping...");
+			emitPlaybackStatusChanged(OUTPUT_STATE_STOPPED);
 			break;
 		case DB_EV_VOLUMECHANGED:
 			emitVolumeChanged(deadbeef->volume_get_db());

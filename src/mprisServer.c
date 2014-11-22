@@ -304,9 +304,6 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	GVariant *result = NULL;
 
 	if (strcmp(propertyName, "PlaybackStatus") == 0) {
-		if (deadbeef == NULL) {
-			error("DB IS NULL");
-		}
 		DB_output_t *output = deadbeef->get_output();
 
 		switch (output->state()) {
@@ -416,6 +413,25 @@ void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Metadata",
 			g_variant_builder_end(&builder), NULL);
+}
+
+void emitPlaybackStatusChanged(int status) {
+	GVariant *signal;
+	switch (status) {
+		case OUTPUT_STATE_PLAYING:
+			signal = g_variant_new("(ss)", "Playing", "PlaybackStatus");
+			break;
+		case OUTPUT_STATE_PAUSED:
+			signal = g_variant_new("(ss)", "Paused", "PlaybackStatus");
+			break;
+		case OUTPUT_STATE_STOPPED:
+		default:
+			signal = g_variant_new("(ss)", "Stopped", "PlaybackStatus");
+			break;
+	}
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "PlaybackStatus",
+			signal, NULL);
 }
 
 static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {

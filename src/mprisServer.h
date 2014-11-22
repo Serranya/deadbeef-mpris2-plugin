@@ -7,5 +7,6 @@ void stopServer(void);
 void emitVolumeChanged(float);
 void emitSeeked(float);
 void emitMetadataChanged(int, DB_functions_t*);
+void emitPlaybackStatusChanged(int);
 
 #endif
