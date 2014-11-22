@@ -35,8 +35,7 @@ the Code from the original plugin.
 - make install
 
 ==== For Users ====
-- Grab the tarball from https://s3-us-west-2.amazonaws.com/serrassoftware/deadbeef-mpris2-plugin-1.0.tar.gz
-- tar -xf deadbeef-mpris2-plugin-1.0.tar.gz
+- Grab the tarball from https://s3-us-west-2.amazonaws.com/serrassoftware/deadbeef-mpris2-plugin-1.0.tar.xz
 - ./configure
 - make install
 
