@@ -4,7 +4,7 @@ AC_PREREQ([2.69])
 AC_INIT([deadbeef-mpris2-plugin], [1.0], [peterlamby@web.de])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
-AM_INIT_AUTOMAKE([foreign -Wall -Werror subdir-objects])
+AM_INIT_AUTOMAKE([foreign -Wall -Werror subdir-objects dist-xz no-dist-gzip])
 AM_SILENT_RULES([yes])
 
 AC_PROG_CC
