@@ -74,6 +74,7 @@ struct nodeInfoAndDeadbeef {
 static GDBusConnection *globalConnection = NULL;
 static GMainLoop *loop;
 
+//TODO use pl_get_meta instead
 GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 	int id;
 	DB_playItem_t *track = NULL;
@@ -94,31 +95,43 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		char buf[500];
 		int buf_size = sizeof(buf);
 
-		g_sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", id);
+		sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", id);
 		debug("get_metadata_v2: mpris:trackid %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
+
 		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000000);
 		debug("get_metadata_v2: length %d", duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
+
+		//TODO mpris:artUrl
+
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%b");
 		debug("get_metadata_v2: album %s", buf);
 		g_variant_builder_add(builder, "{sv}", "xesam:album", g_variant_new("s", buf));
+
+		//TODO has to be an array
+		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%B");
+		debug("get_metadata_v2: albumArtist %s", buf);
+		g_variant_builder_add(builder, "{sv}", "xesam:albumArtist", g_variant_new("s", buf));
+
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%a");
 		debug("get_metadata_v2: artist %s", buf);
+		//TODO has to be an array
 		g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_new("s", buf));
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%t");
 		debug("get_metadata_v2: title %s", buf);
 		g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", buf));
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%B");
-		debug("get_metadata_v2: albumArtist %s", buf);
-		g_variant_builder_add(builder, "{sv}", "xesam:albumArtist", g_variant_new("s", buf));
+
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%g");
 		debug("get_metadata_v2: genre %s", buf);
+		//TODO has to be an array
 		g_variant_builder_add(builder, "{sv}", "xesam:genre", g_variant_new("s", buf));
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%c");
 		debug("get_metadata_v2: comment %s", buf);
+		//TODO has to be an array
 		g_variant_builder_add(builder, "{sv}", "xesam:comment", g_variant_new("s", buf));
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%F");
+		//TODO url must be encoded
 		gchar *fullurl = g_strdup_printf("file://%s", buf);
 		debug("get_metadata_v2: url %s", fullurl);
 		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullurl));
@@ -312,7 +325,8 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	if (strcmp(propertyName, "PlaybackStatus") == 0) {
 		DB_output_t *output = deadbeef->get_output();
 
-		switch (output->state()) {
+		if (output != NULL) {
+			switch (output->state()) {
 			case OUTPUT_STATE_PLAYING:
 				result = g_variant_new_string("Playing");
 				break;
@@ -323,6 +337,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			default:
 				result = g_variant_new_string("Stopped");
 				break;
+			}
 		}
 	} else if (strcmp(propertyName, "LoopStatus") == 0) {
 		int loop = deadbeef->conf_get_int("playback.loop", 0);
