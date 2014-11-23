@@ -49,6 +49,7 @@ static const char xmlForNode[] =
 	"			<arg name='Position'	type='x'/>"
 	"		</signal>"
 	"		<property access='read'			name='PlaybackStatus'	type='s'/>"
+	"		<property access='readwrite'	name='LoopStatus'		type='s'/>"
 	"		<property access='readwrite'	name='Rate'				type='d'/>"
 	"		<property access='readwrite'	name='Shuffle'			type='b'/>"
 	"		<property access='read'			name='Metadata'			type='a{sv}'/>"
@@ -96,7 +97,7 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		g_sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", id);
 		debug("get_metadata_v2: mpris:trackid %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
-		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000);
+		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000000);
 		debug("get_metadata_v2: length %d", duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
 		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%b");
@@ -223,7 +224,13 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		deadbeef->sendmessage(DB_EV_PAUSE, 0, 0, 0);
 	} else if (strcmp(methodName, "PlayPause") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
-		deadbeef->sendmessage(DB_EV_TOGGLE_PAUSE, 0, 0, 0);
+
+		if (deadbeef->get_output()->state() == OUTPUT_STATE_PLAYING) {
+			deadbeef->sendmessage(DB_EV_PAUSE, 0, 0, 0);
+		} else {
+			deadbeef->sendmessage(DB_EV_PLAY_CURRENT, 0, 0, 0);
+		}
+
 	} else if (strcmp(methodName, "Stop") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_STOP, 0, 0, 0);
@@ -317,6 +324,23 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 				result = g_variant_new_string("Stopped");
 				break;
 		}
+	} else if (strcmp(propertyName, "LoopStatus") == 0) {
+		int loop = deadbeef->conf_get_int("playback.loop", 0);
+
+		switch (loop) {
+		case PLAYBACK_MODE_NOLOOP:
+			result = g_variant_new_string("None");
+			break;
+		case PLAYBACK_MODE_LOOP_ALL:
+			result = g_variant_new_string("Playlist");
+			break;
+		case PLAYBACK_MODE_LOOP_SINGLE:
+			result = g_variant_new_string("Track");
+			break;
+		default:
+			result = g_variant_new_string("UnknownLoopStatus");
+			break;
+		}
 	} else if (strcmp(propertyName, "Rate") == 0
 			|| strcmp(propertyName, "MaximumRate") == 0
 			|| strcmp(propertyName, "MinimumRate") == 0) {
@@ -365,16 +389,30 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 	debug("Set property call on Player interface. sender: %s, propertyName: %s", sender, propertyName);
 	DB_functions_t *deadbeef = userData;
 
-	if (strcmp(propertyName, "Rate")) {
+	if (strcmp(propertyName, "LoopStatus") == 0) {
+		char *status;
+		g_variant_get(value, "s", &status);
+		if (status != NULL) {
+			if (strcmp(status, "None") == 0)
+				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_NOLOOP);
+			else if (strcmp(status, "Playlist") == 0)
+				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_LOOP_ALL);
+			else if (strcmp(status, "Track") == 0)
+				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_LOOP_SINGLE);
+
+			deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0);
+		}
+	}
+	else if (strcmp(propertyName, "Rate") == 0) {
 		debug("Setting the rate is not supported");
-	} else if (strcmp(propertyName, "Shuffle")) {
+	} else if (strcmp(propertyName, "Shuffle") == 0) {
 		if (g_variant_get_boolean(value)) {
 			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_LINEAR);
 		} else {
 			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_RANDOM);
 		}
 		deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0); //TODO is this needed ?
-	} else if (strcmp(propertyName, "Volume")) {
+	} else if (strcmp(propertyName, "Volume") == 0) {
 		double volume = g_variant_get_double(value);
 		if (volume > 1.0) {
 			volume = 1.0;
