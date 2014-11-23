@@ -50,6 +50,7 @@ static const char xmlForNode[] =
 	"		</signal>"
 	"		<property access='read'			name='PlaybackStatus'	type='s'/>"
 	"		<property access='readwrite'	name='Rate'				type='d'/>"
+	"		<property access='readwrite'	name='Shuffle'			type='b'/>"
 	"		<property access='read'			name='Metadata'			type='a{sv}'/>"
 	"		<property access='readwrite'	name='Volume'			type='d'/>"
 	"		<property access='read'			name='Position'			type='x'/>"
@@ -320,6 +321,12 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			|| strcmp(propertyName, "MaximumRate") == 0
 			|| strcmp(propertyName, "MinimumRate") == 0) {
 		result = g_variant_new("d", 1.0);
+	} else if (strcmp(propertyName, "Shuffle") == 0) {
+		if (deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR) == PLAYBACK_ORDER_LINEAR) {
+			result = g_variant_new_boolean(TRUE);
+		} else {
+			result = g_variant_new_boolean(FALSE);
+		}
 	} else if (strcmp(propertyName, "Metadata") == 0) {
 		result = getMetadataForTrack(CURRENT_TRACK, deadbeef);
 	} else if (strcmp(propertyName, "Volume") == 0) {
@@ -360,6 +367,13 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 
 	if (strcmp(propertyName, "Rate")) {
 		debug("Setting the rate is not supported");
+	} else if (strcmp(propertyName, "Shuffle")) {
+		if (g_variant_get_boolean(value)) {
+			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_LINEAR);
+		} else {
+			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_RANDOM);
+		}
+		deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0); //TODO is this needed ?
 	} else if (strcmp(propertyName, "Volume")) {
 		double volume = g_variant_get_double(value);
 		if (volume > 1.0) {
