@@ -24,6 +24,7 @@ static const char xmlForNode[] =
 	"		<property access='read'	name='CanRaise'				type='b'/>"
 	"		<property access='read'	name='HasTrackList'			type='b'/>"
 	"		<property access='read'	name='Identity'				type='s'/>"
+	"		<property access='read' name='DesktopEntry'			type='s'/>"
 	"		<property access='read'	name='SupportedUriSchemes'	type='as'/>"
 	"		<property access='read'	name='SupportedMimeTypes'	type='as'/>"
 	"	</interface>"
@@ -160,6 +161,8 @@ static GVariant* onRootGetPropertyHandler(GDBusConnection *connection, const cha
 		result = g_variant_new_boolean(FALSE);
 	} else if (strcmp(propertyName, "Identity") == 0) {
 		result = g_variant_new_string("DeaDBeeF");
+	} else if (strcmp(propertyName, "DesktopEntry") == 0) {
+		result = g_variant_new_string("deadbeef");
 	} else if (strcmp(propertyName, "SupportedUriSchemes") == 0) {
 		GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
 		//TODO find uri schemata
