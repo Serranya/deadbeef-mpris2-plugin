@@ -166,11 +166,6 @@ static GVariant* onRootGetPropertyHandler(GDBusConnection *connection, const cha
 	} else if (strcmp(propertyName, "SupportedUriSchemes") == 0) {
 		GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("as"));
 		//TODO find uri schemata
-		/*
-		* I don't know where to find the supported uri schemes.
-		* These two are found from the gui.
-		*
-		*/
 		g_variant_builder_add(builder, "s", "file");
 		g_variant_builder_add(builder, "s", "http");
 		g_variant_builder_add(builder, "s", "cdda");
