@@ -47,7 +47,7 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 		case DB_EV_SEEKED:
 			emitSeeked(deadbeef->streamer_get_playpos());
 			break;
-		case DB_EV_SONGCHANGED:
+		case DB_EV_TRACKINFOCHANGED:
 			emitMetadataChanged(-1, deadbeef);
 			break;
 		case DB_EV_SONGSTARTED:
