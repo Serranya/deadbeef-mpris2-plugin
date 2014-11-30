@@ -264,7 +264,8 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			float newPositionInMilliseconds = positionInMilliseconds + offsetInMilliseconds;
 			if (newPositionInMilliseconds < 0) {
 				newPositionInMilliseconds = 0;
-			} else if (newPositionInMilliseconds > durationInMilliseconds) {
+			}
+			if (newPositionInMilliseconds > durationInMilliseconds) {
 				deadbeef->sendmessage(DB_EV_NEXT, 0, 0, 0);
 			} else {
 				deadbeef->sendmessage(DB_EV_SEEK, 0, newPositionInMilliseconds, 0);
