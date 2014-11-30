@@ -511,14 +511,13 @@ static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, 
 
 static void onNameAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
 	debug("name accquired: %s", name);
-	int registerIdForRootInterface, registerIdForPlayerInterface;
 	struct nodeInfoAndDeadbeef *info = userData;
 
 	debug("Registering" OBJECT_NAME "object...");
-	registerIdForRootInterface = g_dbus_connection_register_object(connection, OBJECT_NAME,
+	g_dbus_connection_register_object(connection, OBJECT_NAME,
 			info->nodeInfo->interfaces[0], &rootInterfaceVTable, info->deadbeef, NULL, NULL);
 
-	registerIdForPlayerInterface = g_dbus_connection_register_object(connection, OBJECT_NAME,
+	g_dbus_connection_register_object(connection, OBJECT_NAME,
 			info->nodeInfo->interfaces[1], &playerInterfaceVTable, info->deadbeef, NULL, NULL);
 }
 
