@@ -45,7 +45,7 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
 	switch (id) {
 		case DB_EV_SEEKED:
-			emitSeeked(deadbeef->streamer_get_playpos());
+			emitSeeked(((ddb_event_playpos_t *) ctx)->playpos);
 			break;
 		case DB_EV_TRACKINFOCHANGED:
 			emitMetadataChanged(-1, deadbeef);
