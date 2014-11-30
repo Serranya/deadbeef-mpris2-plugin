@@ -353,7 +353,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			result = g_variant_new_string("Track");
 			break;
 		default:
-			result = g_variant_new_string("UnknownLoopStatus");
+			result = g_variant_new_string("None");
 			break;
 		}
 	} else if (strcmp(propertyName, "Rate") == 0
