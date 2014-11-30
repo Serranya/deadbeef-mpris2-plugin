@@ -408,13 +408,17 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 		char *status;
 		g_variant_get(value, "s", &status);
 		if (status != NULL) {
-			if (strcmp(status, "None") == 0)
+			debug("status is %s", status);
+			deadbeef->conf_lock();
+			if (strcmp(status, "None") == 0) {
 				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_NOLOOP);
-			else if (strcmp(status, "Playlist") == 0)
+			} else if (strcmp(status, "Playlist") == 0) {
 				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_LOOP_ALL);
-			else if (strcmp(status, "Track") == 0)
+			} else if (strcmp(status, "Track") == 0) {
 				deadbeef->conf_set_int("playback.loop", PLAYBACK_MODE_LOOP_SINGLE);
+			}
 
+			deadbeef->conf_unlock();
 			deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0);
 		}
 	}
