@@ -51,7 +51,6 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			emitMetadataChanged(-1, deadbeef);
 			break;
 		case DB_EV_SONGSTARTED:
-			debug("Playing...");
 			emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING);
 			break;
 		case DB_EV_PAUSED:
@@ -71,7 +70,6 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			}
 			break;
 		case DB_EV_STOP:
-			debug("Stopping...");
 			emitPlaybackStatusChanged(OUTPUT_STATE_STOPPED);
 			break;
 		case DB_EV_VOLUMECHANGED:
