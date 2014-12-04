@@ -372,16 +372,16 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	} else if (strcmp(propertyName, "Volume") == 0) {
 		float volume = (deadbeef->volume_get_db() * 0.02) + 1;
 
-		result = g_variant_new("(d)", volume);
+		result = g_variant_new("d", volume);
 	} else if (strcmp(propertyName, "Position") == 0) {
 		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
 
 		if (track == NULL) {
-			result = g_variant_new("(x)", 0);
+			result = g_variant_new("x", 0);
 		} else {
 			float positionInSeconds = deadbeef->streamer_get_playpos();
 
-			result = g_variant_new("(x)", (uint64_t)(positionInSeconds * 1000000.0));
+			result = g_variant_new("x", (uint64_t)(positionInSeconds * 1000000.0));
 			deadbeef->pl_item_unref(track);
 		}
 	} else if (strcmp(propertyName, "CanGoNext") == 0) {
