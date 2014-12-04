@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -74,7 +76,6 @@ struct nodeInfoAndDeadbeef {
 static GDBusConnection *globalConnection = NULL;
 static GMainLoop *loop;
 
-//TODO use pl_get_meta instead
 GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 	int id;
 	DB_playItem_t *track = NULL;
@@ -95,48 +96,96 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		char buf[500];
 		int buf_size = sizeof(buf);
 
-		sprintf(buf, "/org/mpris/MediaPlayer2/Track/track%d", id);
-		debug("get_metadata_v2: mpris:trackid %s", buf);
+		deadbeef->pl_lock();
+
+		sprintf(buf, "/org/mpris/MediaPlayer2/DeaDBeeF/playlist/%d", id);
+		debug("get Metadata trackid: %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
-		int64_t duration = (int64_t) ((deadbeef->pl_get_item_duration(track)) * 1000000);
-		debug("get_metadata_v2: length %d", duration);
+		int64_t duration = (int64_t)deadbeef->pl_get_item_duration(track) * 1000000;
+		debug("get Metadata duration: %" PRId64, duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
 
 		//TODO mpris:artUrl
 
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%b");
-		debug("get_metadata_v2: album %s", buf);
-		g_variant_builder_add(builder, "{sv}", "xesam:album", g_variant_new("s", buf));
+		const char *album = deadbeef->pl_find_meta(track, "album");
+		debug("get Metadata album: %s", album);
+		if (album != NULL) {
+			g_variant_builder_add(builder, "{sv}", "xesam:album", g_variant_new("s", album));
+		}
 
-		//TODO has to be an array
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%B");
-		debug("get_metadata_v2: albumArtist %s", buf);
-		g_variant_builder_add(builder, "{sv}", "xesam:albumArtist", g_variant_new("s", buf));
+		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
+		if (albumArtist == NULL)
+			albumArtist = deadbeef->pl_find_meta(track, "album artist");
+		if (albumArtist == NULL)
+			albumArtist = deadbeef->pl_find_meta(track, "band");
+		debug("get Metadata albumArtist: %s", albumArtist);
+		if (albumArtist != NULL) {
+			GVariantBuilder *albumArtistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
+			g_variant_builder_add(albumArtistBuilder, "s", albumArtist);
+			g_variant_builder_add(builder, "{sv}", "xesam:albumArtist", g_variant_builder_end(albumArtistBuilder));
+			g_variant_builder_unref(albumArtistBuilder);
+		}
 
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%a");
-		debug("get_metadata_v2: artist %s", buf);
-		//TODO has to be an array
-		g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_new("s", buf));
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%t");
-		debug("get_metadata_v2: title %s", buf);
-		g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", buf));
+		const char *artist = deadbeef->pl_find_meta(track, "artist");
+		debug("get Metadata artist: %s", artist);
+		if (artist != NULL) {
+			GVariantBuilder *artistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
+			g_variant_builder_add(artistBuilder, "s", artist);
+			g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_builder_end(artistBuilder));
+			g_variant_builder_unref(artistBuilder);
+		}
 
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%g");
-		debug("get_metadata_v2: genre %s", buf);
-		//TODO has to be an array
-		g_variant_builder_add(builder, "{sv}", "xesam:genre", g_variant_new("s", buf));
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%c");
-		debug("get_metadata_v2: comment %s", buf);
-		//TODO has to be an array
-		g_variant_builder_add(builder, "{sv}", "xesam:comment", g_variant_new("s", buf));
-		deadbeef->pl_format_title(track, -1, buf, buf_size, -1, "%F");
-		//TODO url must be encoded
-		gchar *fullurl = g_strdup_printf("file://%s", buf);
-		debug("get_metadata_v2: url %s", fullurl);
-		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullurl));
-		g_free(fullurl);
+		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
+		debug("get Metadata lyrics: %s", lyrics);
+		if (lyrics != NULL) {
+			g_variant_builder_add(builder, "{sv}", "xesam:asText", g_variant_new("s", lyrics));
+		}
 
+		const char *comment = deadbeef->pl_find_meta(track, "comment");
+		debug("get Metadata comment: %s", comment);
+		if (comment != NULL) {
+			GVariantBuilder *commentBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
+			g_variant_builder_add(commentBuilder, "s", comment);
+			g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_builder_end(commentBuilder));
+			g_variant_builder_unref(commentBuilder);
+		}
+
+		const char *date = deadbeef->pl_find_meta_raw(track, "year");
+		if (date == NULL)
+			date = deadbeef->pl_find_meta(track, "date");
+		debug("get Metadata contentCreated: %s", date); //TODO format date
+		if (date != NULL) {
+			g_variant_builder_add(builder, "{sv}", "xesam:contentCreated", g_variant_new("s", date));
+		}
+
+		//TODO xesam:genre
+
+		const char *title = deadbeef->pl_find_meta(track, "title");
+		debug("get Metadata title: %s", title);
+		if (date != NULL) {
+			g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", title));
+			//free((char*)title);
+		}
+
+		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
+		debug("get Metadata trackNumber: %s", trackNumber);
+		if (date != NULL) {
+			int trackNumberAsInt = atoi(trackNumber);
+			if (trackNumberAsInt > 0) {
+				g_variant_builder_add(builder, "{sv}", "xesam:trackNumber", g_variant_new("q", trackNumberAsInt));
+			}
+		}
+
+		const char *uri = deadbeef->pl_find_meta(track, ":URI"); // TODO url encode
+		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
+		strcpy(fullUri, "file://");
+		strcpy(fullUri + 6, uri);
+		debug("get Metadata URI: %s", fullUri);
+		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullUri));
+		free(fullUri);
+
+		deadbeef->pl_unlock();
 		deadbeef->pl_item_unref(track);
 	}
 	tmp = g_variant_builder_end(builder);
