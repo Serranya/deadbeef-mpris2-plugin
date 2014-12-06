@@ -163,14 +163,13 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 
 		const char *title = deadbeef->pl_find_meta(track, "title");
 		debug("get Metadata title: %s", title);
-		if (date != NULL) {
+		if (title != NULL) {
 			g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", title));
-			//free((char*)title);
 		}
 
 		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		debug("get Metadata trackNumber: %s", trackNumber);
-		if (date != NULL) {
+		if (trackNumber != NULL) {
 			int trackNumberAsInt = atoi(trackNumber);
 			if (trackNumberAsInt > 0) {
 				g_variant_builder_add(builder, "{sv}", "xesam:trackNumber", g_variant_new("q", trackNumberAsInt));
