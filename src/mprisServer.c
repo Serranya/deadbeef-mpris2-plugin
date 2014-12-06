@@ -411,9 +411,9 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 		result = g_variant_new("d", 1.0);
 	} else if (strcmp(propertyName, "Shuffle") == 0) {
 		if (deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR) == PLAYBACK_ORDER_LINEAR) {
-			result = g_variant_new_boolean(TRUE);
-		} else {
 			result = g_variant_new_boolean(FALSE);
+		} else {
+			result = g_variant_new_boolean(TRUE);
 		}
 	} else if (strcmp(propertyName, "Metadata") == 0) {
 		result = getMetadataForTrack(CURRENT_TRACK, deadbeef);
@@ -474,9 +474,9 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 		debug("Setting the rate is not supported");
 	} else if (strcmp(propertyName, "Shuffle") == 0) {
 		if (g_variant_get_boolean(value)) {
-			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_LINEAR);
-		} else {
 			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_RANDOM);
+		} else {
+			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_LINEAR);
 		}
 		deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0); //TODO is this needed ?
 	} else if (strcmp(propertyName, "Volume") == 0) {
