@@ -471,8 +471,7 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 			deadbeef->conf_unlock();
 			deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0);
 		}
-	}
-	else if (strcmp(propertyName, "Rate") == 0) {
+	} else if (strcmp(propertyName, "Rate") == 0) {
 		debug("Setting the rate is not supported");
 	} else if (strcmp(propertyName, "Shuffle") == 0) {
 		if (g_variant_get_boolean(value)) {
@@ -492,7 +491,8 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 
 		deadbeef->volume_set_db(newVolume);
 	}
-	return 0;
+
+	return TRUE;
 }
 
 static const GDBusInterfaceVTable playerInterfaceVTable = {
