@@ -172,7 +172,7 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		if (trackNumber != NULL) {
 			int trackNumberAsInt = atoi(trackNumber);
 			if (trackNumberAsInt > 0) {
-				g_variant_builder_add(builder, "{sv}", "xesam:trackNumber", g_variant_new("q", trackNumberAsInt));
+				g_variant_builder_add(builder, "{sv}", "xesam:trackNumber", g_variant_new("i", trackNumberAsInt));
 			}
 		}
 
