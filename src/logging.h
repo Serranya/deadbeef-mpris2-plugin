@@ -1,10 +1,10 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
-#define MPRIS__DEBUG 0
+//#define MPRIS__DEBUG
 
 #ifndef MPRIS__DEBUG
-	#define debug(msg)
+	#define debug(...)
 #else
 	#define debug(...) logDebug(__VA_ARGS__)
 #endif
