@@ -30,7 +30,7 @@ the code from the original plugin.
 - make install
 
 ==== For Users ====
-- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.2/deadbeef-mpris2-plugin-1.2.tar.xz
+- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.3/deadbeef-mpris2-plugin-1.3.tar.xz
 - ./configure
 - make install
 
