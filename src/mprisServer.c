@@ -516,6 +516,9 @@ void emitVolumeChanged(float volume) {
 			signal, NULL);
 }
 
+
+//TODO this is probably wrong.
+//I think the signal only contains one parameter. Not the String...
 void emitSeeked(float position) {
 	int64_t positionInMicroseconds = position * 1000000.0;
 	debug("Seeked to %" PRId64, positionInMicroseconds);
