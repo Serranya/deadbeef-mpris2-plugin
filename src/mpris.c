@@ -43,6 +43,8 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
 	static int lastState = -1;
 
+	//TODO Add DB_EV_CONFIGCHANGED handler for playback.loop to update LoopStatus property
+	//TODO Add DB_EV_CONFIGCHANGED handler for playback.order to update Shuffle property
 	switch (id) {
 		case DB_EV_SEEKED:
 			emitSeeked(((ddb_event_playpos_t *) ctx)->playpos);
