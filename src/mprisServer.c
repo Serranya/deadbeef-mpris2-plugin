@@ -550,22 +550,30 @@ void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
 }
 
 void emitPlaybackStatusChanged(int status) {
-	GVariant *signal;
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
+
 	switch (status) {
 		case OUTPUT_STATE_PLAYING:
-			signal = g_variant_new("(ss)", "Playing", "PlaybackStatus");
+			g_variant_builder_add(builder, "{sv}", "PlaybackStatus", g_variant_new_string("Playing"));
 			break;
 		case OUTPUT_STATE_PAUSED:
-			signal = g_variant_new("(ss)", "Paused", "PlaybackStatus");
+			g_variant_builder_add(builder, "{sv}", "PlaybackStatus", g_variant_new_string("Paused"));
 			break;
 		case OUTPUT_STATE_STOPPED:
 		default:
-			signal = g_variant_new("(ss)", "Stopped", "PlaybackStatus");
+			g_variant_builder_add(builder, "{sv}", "PlaybackStatus", g_variant_new_string("Stopped"));
 			break;
 	}
+	GVariant *signal[] = {
+		g_variant_new_string(PLAYER_INTERFACE),
+		g_variant_builder_end(builder),
+		g_variant_new_strv(NULL, 0)
+	};
 
-	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "PlaybackStatus",
-			signal, NULL);
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+			g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
 }
 
 static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
