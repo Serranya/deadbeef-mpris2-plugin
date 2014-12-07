@@ -15,6 +15,7 @@
 #define BUS_NAME "org.mpris.MediaPlayer2.DeaDBeeF"
 #define OBJECT_NAME "/org/mpris/MediaPlayer2"
 #define PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
+#define PROPERTIES_INTERFACE "org.freedesktop.DBus.Properties"
 #define CURRENT_TRACK -1
 
 static const char xmlForNode[] =
@@ -508,14 +509,22 @@ static const GDBusInterfaceVTable playerInterfaceVTable = {
 //* SIGNALS *
 //***********
 void emitVolumeChanged(float volume) {
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 	volume = (volume * 0.02) + 1;
 	debug("Volume property changed: %f", volume);
-	GVariant *signal = g_variant_new("(ds)", volume, "Volume");
 
-	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Volume",
-			signal, NULL);
+	g_variant_builder_add(builder, "{sv}", "Volume", g_variant_new("d", volume));
+	GVariant *signal[] = {
+		g_variant_new_string(PLAYER_INTERFACE),
+		g_variant_builder_end(builder),
+		g_variant_new_strv(NULL, 0)
+	};
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+			g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
 }
-
 
 //TODO this is probably wrong.
 //I think the signal only contains one parameter. Not the String...
