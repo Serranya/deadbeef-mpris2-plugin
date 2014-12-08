@@ -18,6 +18,8 @@
 #define PROPERTIES_INTERFACE "org.freedesktop.DBus.Properties"
 #define CURRENT_TRACK -1
 
+void emitSeeked(float);
+
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
 	"	<interface name='org.mpris.MediaPlayer2'>"
@@ -325,6 +327,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			}
 
 			deadbeef->pl_item_unref(track);
+			emitSeeked(newPositionInMilliseconds);
 		}
 	} else if (strcmp(methodName, "SetPosition") == 0) {
 		int64_t position = 0;
@@ -344,6 +347,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			}
 			deadbeef->pl_item_unref(track);
 			deadbeef->plt_unref(pl);
+			emitSeeked(deadbeef->streamer_get_playpos() * 1000.0);
 		}
 		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else if (strcmp(methodName, "OpenUri") == 0) {
@@ -526,15 +530,12 @@ void emitVolumeChanged(float volume) {
 	g_variant_builder_unref(builder);
 }
 
-//TODO this is probably wrong.
-//I think the signal only contains one parameter. Not the String...
 void emitSeeked(float position) {
 	int64_t positionInMicroseconds = position * 1000000.0;
 	debug("Seeked to %" PRId64, positionInMicroseconds);
-	GVariant *signal = g_variant_new("(xs)", positionInMicroseconds, "Position");
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Seeked",
-			signal, NULL);
+			g_variant_new("(x)", positionInMicroseconds), NULL);
 }
 
 void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
