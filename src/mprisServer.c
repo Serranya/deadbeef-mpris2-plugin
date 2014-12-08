@@ -49,7 +49,7 @@ static const char xmlForNode[] =
 	"			<arg name='Uri'			type='s'/>"
 	"		</method>"
 	"		<signal name='Seeked'>"
-	"			<arg name='Position'	type='x'/>"
+	"			<arg name='Position'	type='x' direction='out'/>"
 	"		</signal>"
 	"		<property access='read'			name='PlaybackStatus'	type='s'/>"
 	"		<property access='readwrite'	name='LoopStatus'		type='s'/>"
