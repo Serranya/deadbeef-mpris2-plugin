@@ -538,15 +538,19 @@ void emitSeeked(float position) {
 }
 
 void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
-	GVariantBuilder builder;
-	g_variant_builder_init(&builder, G_VARIANT_TYPE("(a{sv}s)"));
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 
-	GVariant *metadata = getMetadataForTrack(trackId, deadbeef);
-	g_variant_builder_add_value(&builder, metadata);
-	g_variant_builder_add(&builder, "s", "Metadata");
+	g_variant_builder_add(builder, "{sv}", "Metadata", getMetadataForTrack(trackId, deadbeef));
+	GVariant *signal[] = {
+			g_variant_new_string(PLAYER_INTERFACE),
+			g_variant_builder_end(builder),
+			g_variant_new_strv(NULL, 0)
+	};
 
-	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Metadata",
-			g_variant_builder_end(&builder), NULL);
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+			g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
 }
 
 void emitPlaybackStatusChanged(int status) {
