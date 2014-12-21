@@ -2,23 +2,26 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <glib.h>
 #include <gio/gio.h>
-
-#define DDB_API_LEVEL 7
-#define DDB_WARN_DEPRECATED 1
-#include <deadbeef/deadbeef.h>
+//TODO organize
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "logging.h"
+#include "mprisServer.h"
 
 #define BUS_NAME "org.mpris.MediaPlayer2.DeaDBeeF"
 #define OBJECT_NAME "/org/mpris/MediaPlayer2"
 #define PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
 #define PROPERTIES_INTERFACE "org.freedesktop.DBus.Properties"
 #define CURRENT_TRACK -1
+#define CACHE_PATH "deadbeef/mpris/cover.png"
 
 void emitSeeked(float);
+static char * getCacheDir(void);
 
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
@@ -75,17 +78,52 @@ static const char xmlForNode[] =
 	"	</interface>"
 	"</node>";
 
-struct nodeInfoAndDeadbeef {
-	GDBusNodeInfo *nodeInfo;
-	DB_functions_t *deadbeef;
-};
-
 static GDBusConnection *globalConnection = NULL;
 static GMainLoop *loop;
 
-GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
+static char * writeCover(GdkPixbuf *cover) {
+	char *cacheDir = getCacheDir();
+	debug("Artwork saved in %s with length %d", cacheDir + 7, strlen(cacheDir) - 7);
+
+	gdk_pixbuf_save(cover, cacheDir + 7, "png", NULL, NULL);
+	return cacheDir;
+}
+
+static void coverartCallback(void *userData) {
+	debug("asynchronous loading of albumart successfull");
+	emitMetadataChanged(-1, userData);
+}
+
+static char * getCacheDir() {
+	char *cacheDir;
+
+	char *xdgCacheDir = getenv("XDG_CACHE_HOME");
+	if (xdgCacheDir != NULL) {
+		cacheDir = malloc(7 + strlen(xdgCacheDir) + 25 + 1); // strlen("file://") + strlen(xdgCacheDir) + strlen(/deadbeef/mpris/cover.png) + \0
+
+		strcpy(cacheDir, xdgCacheDir);
+	} else {
+		char *homeDir = getenv("HOME");
+		debug("%d", strlen(homeDir) + 7 + 25 + 1);
+		cacheDir = malloc(7 + strlen(homeDir) + 7 + 25 + 1); // strlen("file://") + strlen(homeDir) + strlen(/.cache) + strlen(/deadbeef/mpris/cover.png) + \0
+
+		strcpy(cacheDir, "file://");
+		strcat(cacheDir, homeDir);
+		strcat(cacheDir, "/.cache");
+	}
+	strcat(cacheDir, "/deadbeef/mpris");
+	if (access(cacheDir, F_OK) != 0) {
+		mkdir(cacheDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); //755
+	}
+	strcat(cacheDir, "/cover.png");
+
+	return cacheDir;
+}
+
+GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	int id;
 	DB_playItem_t *track = NULL;
+	DB_functions_t *deadbeef = mprisData->deadbeef;
 	ddb_playlist_t *pl = deadbeef->plt_get_curr();
 	GVariant *tmp;
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
@@ -113,8 +151,6 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 		debug("get Metadata duration: %" PRId64, duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
 
-		//TODO mpris:artUrl
-
 		const char *album = deadbeef->pl_find_meta(track, "album");
 		debug("get Metadata album: %s", album);
 		if (album != NULL) {
@@ -141,6 +177,21 @@ GVariant* getMetadataForTrack(int track_id, DB_functions_t *deadbeef) {
 			g_variant_builder_add(artistBuilder, "s", artist);
 			g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_builder_end(artistBuilder));
 			g_variant_builder_unref(artistBuilder);
+		}
+
+		if (mprisData->gui != NULL) {
+			debug("getting cover for album %s", album);
+			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(album,
+					artist, album, 500, coverartCallback, mprisData);
+			if (cover != NULL) {
+				char *uri = writeCover(cover);
+				debug("cover for %s ready and written", album);
+				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
+				free(uri);
+				g_object_unref(cover);
+			} else {
+				debug("cover for %s not ready", album);
+			}
 		}
 
 		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
@@ -204,7 +255,7 @@ static void onRootMethodCallHandler(GDBusConnection *connection, const char *sen
 		const char *interfaceName, const char *methodName, GVariant *parameters, GDBusMethodInvocation *invocation,
 		void *userData) {
 	debug("Method call on root interface. sender: %s, methodName %s", sender, methodName);
-	DB_functions_t *deadbeef = userData;
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
 	if (strcmp(methodName, "Quit") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
@@ -279,7 +330,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		void *userData) {
 	debug("Method call on Player interface. sender: %s, methodName %s", sender, methodName);
 	debug("Parameter signature is %s", g_variant_get_type_string (parameters));
-	DB_functions_t *deadbeef = userData;
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
 	if (strcmp(methodName, "Next") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
@@ -377,7 +428,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
 		const char *interfaceName, const char *propertyName, GError **error, void *userData) {
 	debug("Get property call on Player interface. sender: %s, propertyName: %s", sender, propertyName);
-	DB_functions_t *deadbeef = userData;
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 	GVariant *result = NULL;
 
 	if (strcmp(propertyName, "PlaybackStatus") == 0) {
@@ -425,7 +476,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			result = g_variant_new_boolean(TRUE);
 		}
 	} else if (strcmp(propertyName, "Metadata") == 0) {
-		result = getMetadataForTrack(CURRENT_TRACK, deadbeef);
+		result = getMetadataForTrack(CURRENT_TRACK, userData);
 	} else if (strcmp(propertyName, "Volume") == 0) {
 		float volume = (deadbeef->volume_get_db() * 0.02) + 1;
 
@@ -460,7 +511,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
 		const char *interfaceName, const char *propertyName, GVariant *value, GError **error, gpointer userData) {
 	debug("Set property call on Player interface. sender: %s, propertyName: %s", sender, propertyName);
-	DB_functions_t *deadbeef = userData;
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
 	if (strcmp(propertyName, "LoopStatus") == 0) {
 		char *status;
@@ -538,10 +589,10 @@ void emitSeeked(float position) {
 			g_variant_new("(x)", positionInMicroseconds), NULL);
 }
 
-void emitMetadataChanged(int trackId, DB_functions_t *deadbeef) {
+void emitMetadataChanged(int trackId, struct MprisData *userData) {
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 
-	g_variant_builder_add(builder, "{sv}", "Metadata", getMetadataForTrack(trackId, deadbeef));
+	g_variant_builder_add(builder, "{sv}", "Metadata", getMetadataForTrack(trackId, userData));
 	GVariant *signal[] = {
 			g_variant_new_string(PLAYER_INTERFACE),
 			g_variant_builder_end(builder),
@@ -588,14 +639,14 @@ static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, 
 
 static void onNameAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
 	debug("name accquired: %s", name);
-	struct nodeInfoAndDeadbeef *info = userData;
+	GDBusInterfaceInfo **interfaces = ((struct MprisData*)userData)->gdbusNodeInfo->interfaces;
 
 	debug("Registering" OBJECT_NAME "object...");
-	g_dbus_connection_register_object(connection, OBJECT_NAME,
-			info->nodeInfo->interfaces[0], &rootInterfaceVTable, info->deadbeef, NULL, NULL);
+	g_dbus_connection_register_object(connection, OBJECT_NAME, interfaces[0], &rootInterfaceVTable, userData, NULL,
+			NULL);
 
-	g_dbus_connection_register_object(connection, OBJECT_NAME,
-			info->nodeInfo->interfaces[1], &playerInterfaceVTable, info->deadbeef, NULL, NULL);
+	g_dbus_connection_register_object(connection, OBJECT_NAME, interfaces[1], &playerInterfaceVTable, userData, NULL,
+			NULL);
 }
 
 static void onConnotConnectToBus(GDBusConnection *connection, const char *name, void *user_data){
@@ -605,21 +656,21 @@ static void onConnotConnectToBus(GDBusConnection *connection, const char *name, 
 void* startServer(void *data) {
 	int ownerId;
 	GMainContext *context = g_main_context_new();
-	struct nodeInfoAndDeadbeef info;
+	struct MprisData *mprisData = data;
+
 
 	g_main_context_push_thread_default(context);
 
-	info.nodeInfo = g_dbus_node_info_new_for_xml(xmlForNode, NULL);
-	info.deadbeef = data;
+	mprisData->gdbusNodeInfo = g_dbus_node_info_new_for_xml(xmlForNode, NULL);
 
 	ownerId = g_bus_own_name(G_BUS_TYPE_SESSION, BUS_NAME, G_BUS_NAME_OWNER_FLAGS_REPLACE,
-			onBusAcquiredHandler, onNameAcquiredHandler, onConnotConnectToBus, (void *)&info,NULL);
+			onBusAcquiredHandler, onNameAcquiredHandler, onConnotConnectToBus, (void *)mprisData, NULL);
 
 	loop = g_main_loop_new(context, FALSE);
 	g_main_loop_run(loop);
 
 	g_bus_unown_name(ownerId);
-	g_dbus_node_info_unref(info.nodeInfo);
+	g_dbus_node_info_unref(mprisData->gdbusNodeInfo);
 	g_main_loop_unref(loop);
 
 	return 0;

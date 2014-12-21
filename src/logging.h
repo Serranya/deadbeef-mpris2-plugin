@@ -1,7 +1,7 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
-//#define MPRIS__DEBUG
+#define MPRIS__DEBUG
 
 #ifndef MPRIS__DEBUG
 	#define debug(...)

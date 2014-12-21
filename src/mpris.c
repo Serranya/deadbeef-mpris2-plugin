@@ -1,33 +1,33 @@
-/*
- ============================================================================
- Name        : mpris.c
- Author      : Peter Lamby
- Version     :
- Copyright   : GPLv2
- Description : DeaDBeeF mpris plugin
- ============================================================================
- */
-
-#define DDB_API_LEVEL 7
-#define DDB_WARN_DEPRECATED 1
-#include <deadbeef/deadbeef.h>
-
 #include <glib.h>
 
 #include "mprisServer.h"
 #include "logging.h"
 
 static GThread *mprisThread;
-static DB_functions_t *deadbeef;
+static struct MprisData mprisData;
 
 static int onStart() {
-	mprisThread = g_thread_new(NULL, startServer, (void *)deadbeef);
+	mprisThread = g_thread_new("mpris-listener", startServer, (void *)&mprisData);
 
 	return 0;
 }
 
 static int onStop() {
 	stopServer();
+	g_thread_unref(mprisThread);
+
+	return 0;
+}
+
+static int onConnect() {
+	ddb_gtkui_t *guiPlugin = (ddb_gtkui_t *)mprisData.deadbeef->plug_get_for_id (DDB_GTKUI_PLUGIN_ID);
+
+	if (guiPlugin != NULL && guiPlugin->gui.plugin.version_major == 2) {
+		debug("gtkui detected... album art support enabled");
+		mprisData.gui = guiPlugin;
+	} else {
+		debug("gtkui not detected... album art support disabled");
+	}
 
 	return 0;
 }
@@ -40,22 +40,27 @@ static int onStop() {
 //* - Seeked            *
 //***********************
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
-
 	static int lastState = -1;
+	DB_functions_t *deadbeef = mprisData.deadbeef;
 
 	//TODO Add DB_EV_CONFIGCHANGED handler for playback.loop to update LoopStatus property
 	//TODO Add DB_EV_CONFIGCHANGED handler for playback.order to update Shuffle property
 	switch (id) {
-		case DB_EV_SEEKED: //TODO probably useless
+		case DB_EV_SEEKED:
+			debug("DB_EV_SEEKED event recieved");
 			emitSeeked(((ddb_event_playpos_t *) ctx)->playpos);
 			break;
 		case DB_EV_TRACKINFOCHANGED:
-			emitMetadataChanged(-1, deadbeef);
+			debug("DB_EV_TRACKINFOCHANGED event recieved");
+			emitMetadataChanged(-1, &mprisData);
 			break;
 		case DB_EV_SONGSTARTED:
+			debug("DB_EV_SONGSTARTED event recieved");
+			emitMetadataChanged(-1, &mprisData);
 			emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING);
 			break;
 		case DB_EV_PAUSED:
+			debug("DB_EV_PAUSED event recieved");
 			debug("PlayPause toggled... last state %d", lastState);
 			switch (lastState) {
 				case -1:
@@ -72,9 +77,11 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			}
 			break;
 		case DB_EV_STOP:
+			debug("DB_EV_STOP event recieved");
 			emitPlaybackStatusChanged(OUTPUT_STATE_STOPPED);
 			break;
 		case DB_EV_VOLUMECHANGED:
+			debug("DB_EV_VOLUMECHANGED event recieved");
 			emitVolumeChanged(deadbeef->volume_get_db());
 			break;
 		default:
@@ -89,7 +96,7 @@ DB_misc_t plugin = {
 	.plugin.api_vminor = DB_API_VERSION_MINOR,
 	.plugin.type = DB_PLUGIN_MISC,
 	.plugin.version_major = 2,
-	.plugin.version_minor = 1,
+	.plugin.version_minor = 3,
 	.plugin.id = "mpris",
 	.plugin.name ="MPRISv2 plugin",
 	.plugin.descr = "Communicate with other applications using D-Bus.",
@@ -113,7 +120,7 @@ DB_misc_t plugin = {
 	.plugin.website = "https://github.com/Serranya/deadbeef-mpris2-plugin",
 	.plugin.start = onStart,
 	.plugin.stop = onStop,
-	.plugin.connect = NULL,
+	.plugin.connect = onConnect,
 	.plugin.disconnect = NULL,
 	.plugin.configdialog = NULL,
 	.plugin.message = handleEvent,
@@ -121,7 +128,7 @@ DB_misc_t plugin = {
 
 DB_plugin_t * mpris_load (DB_functions_t *ddb) {
 	debug("Loading...");
-	deadbeef = ddb;
+	mprisData.deadbeef = ddb;
 
 	return DB_PLUGIN(&plugin);
 }
