@@ -536,7 +536,7 @@ static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *s
 		} else {
 			deadbeef->conf_set_int("playback.order", PLAYBACK_ORDER_LINEAR);
 		}
-		deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0); //TODO is this needed ?
+		deadbeef->sendmessage(DB_EV_CONFIGCHANGED, 0, 0, 0);
 	} else if (strcmp(propertyName, "Volume") == 0) {
 		double volume = g_variant_get_double(value);
 		if (volume > 1.0) {
