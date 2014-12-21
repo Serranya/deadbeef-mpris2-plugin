@@ -21,6 +21,10 @@ the code from the original plugin.
 - The optional "CanSetFullscreen" property of the org.mpris.MediaPlayer2
 	interface.
 
+===== Known Issues =====
+Artwork does not update correctly if you skip very fast through multiple tracks.
+mpris.la is installed but not needed.
+
 ===== How to install =====
 ==== For Developers ====
 - git clone https://github.com/Serranya/deadbeef-mpris2-plugin.git
