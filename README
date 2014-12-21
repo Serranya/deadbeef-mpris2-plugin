@@ -22,8 +22,8 @@ the code from the original plugin.
 	interface.
 
 ===== Known Issues =====
-Artwork does not update correctly if you skip very fast through multiple tracks.
-mpris.la is installed but not needed.
+- Artwork does not update correctly if you skip very fast through multiple tracks.
+- mpris.la is installed but not needed.
 
 ===== How to install =====
 ==== For Developers ====
