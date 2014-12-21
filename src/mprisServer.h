@@ -3,6 +3,7 @@
 
 //TODO make optional
 #include <gtk/gtk.h>
+#include <gio/gio.h>
 
 #define DDB_API_LEVEL 7
 #define DDB_WARN_DEPRECATED 1

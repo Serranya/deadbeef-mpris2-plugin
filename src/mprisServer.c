@@ -179,14 +179,18 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_variant_builder_unref(artistBuilder);
 		}
 
-		//TODO mpris:artUrl
 		if (mprisData->gui != NULL) {
-			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(NULL, artist, album, 500,
-					coverartCallback, mprisData);
+			debug("getting cover for album %s", album);
+			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(album,
+					artist, album, 500, coverartCallback, mprisData);
 			if (cover != NULL) {
 				char *uri = writeCover(cover);
+				debug("cover for %s ready and written", album);
 				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
 				free(uri);
+				g_object_unref(cover);
+			} else {
+				debug("cover for %s not ready", album);
 			}
 		}
 
