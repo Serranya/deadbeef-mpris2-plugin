@@ -4,6 +4,7 @@
 //TODO make optional
 #include <gtk/gtk.h>
 #include <gio/gio.h>
+#include <curl/curl.h>
 
 #define DDB_API_LEVEL 7
 #define DDB_WARN_DEPRECATED 1
@@ -14,6 +15,7 @@ struct MprisData {
 	DB_functions_t *deadbeef;
 	ddb_gtkui_t *gui;
 	GDBusNodeInfo *gdbusNodeInfo;
+	CURL *curl;
 };
 
 void* startServer(void*);

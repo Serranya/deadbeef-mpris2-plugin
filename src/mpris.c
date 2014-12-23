@@ -1,4 +1,5 @@
 #include <glib.h>
+#include <curl/curl.h>
 
 #include "mprisServer.h"
 #include "logging.h"
@@ -7,6 +8,7 @@ static GThread *mprisThread;
 static struct MprisData mprisData;
 
 static int onStart() {
+	mprisData.curl = curl_easy_init();
 	mprisThread = g_thread_new("mpris-listener", startServer, (void *)&mprisData);
 
 	return 0;
@@ -15,6 +17,7 @@ static int onStart() {
 static int onStop() {
 	stopServer();
 	g_thread_unref(mprisThread);
+	curl_easy_cleanup(mprisData.curl);
 
 	return 0;
 }

@@ -7,6 +7,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
+#include <curl/curl.h>
 //TODO organize
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -83,9 +84,10 @@ static GMainLoop *loop;
 
 static char * writeCover(GdkPixbuf *cover) {
 	char *cacheDir = getCacheDir();
-	debug("Artwork saved in %s with length %d", cacheDir + 7, strlen(cacheDir) - 7);
 
-	gdk_pixbuf_save(cover, cacheDir + 7, "png", NULL, NULL);
+	gdk_pixbuf_save(cover, cacheDir, "png", NULL, NULL);
+	debug("Artwork saved in %s with length %d", cacheDir, strlen(cacheDir));
+
 	return cacheDir;
 }
 
@@ -99,16 +101,14 @@ static char * getCacheDir() {
 
 	char *xdgCacheDir = getenv("XDG_CACHE_HOME");
 	if (xdgCacheDir != NULL) {
-		cacheDir = malloc(7 + strlen(xdgCacheDir) + 25 + 1); // strlen("file://") + strlen(xdgCacheDir) + strlen(/deadbeef/mpris/cover.png) + \0
+		cacheDir = malloc(strlen(xdgCacheDir) + 25 + 1); // strlen(xdgCacheDir) + strlen(/deadbeef/mpris/cover.png) + \0
 
 		strcpy(cacheDir, xdgCacheDir);
 	} else {
 		char *homeDir = getenv("HOME");
-		debug("%d", strlen(homeDir) + 7 + 25 + 1);
-		cacheDir = malloc(7 + strlen(homeDir) + 7 + 25 + 1); // strlen("file://") + strlen(homeDir) + strlen(/.cache) + strlen(/deadbeef/mpris/cover.png) + \0
+		cacheDir = malloc(strlen(homeDir) + 7 + 25 + 1); // strlen(homeDir) + strlen(/.cache) + strlen(/deadbeef/mpris/cover.png) + \0
 
-		strcpy(cacheDir, "file://");
-		strcat(cacheDir, homeDir);
+		strcpy(cacheDir, homeDir);
 		strcat(cacheDir, "/.cache");
 	}
 	strcat(cacheDir, "/deadbeef/mpris");
@@ -185,9 +185,17 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 					artist, album, 500, coverartCallback, mprisData);
 			if (cover != NULL) {
 				char *uri = writeCover(cover);
+				char *encodedUri = curl_easy_escape(mprisData->curl, uri, 0);
+				char *fullUri = malloc(7 + strlen(encodedUri)); // strlen(file://) + strlen(encodedUri)
+
+				strcpy(fullUri, "file://");
+				strcpy(fullUri +7, encodedUri);
 				debug("cover for %s ready and written", album);
-				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
+				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", fullUri));
+
 				free(uri);
+				free(fullUri);
+				curl_free(encodedUri);
 				g_object_unref(cover);
 			} else {
 				debug("cover for %s not ready", album);
@@ -234,14 +242,16 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			}
 		}
 
-		const char *uri = deadbeef->pl_find_meta(track, ":URI"); // TODO url encode
+		char *uri = curl_easy_escape(mprisData->curl, deadbeef->pl_find_meta(track, ":URI"), 0);
 		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
+
 		strcpy(fullUri, "file://");
-		strcpy(fullUri + 6, uri);
+		strcpy(fullUri + 7, uri);
 		debug("get Metadata URI: %s", fullUri);
 		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullUri));
-		free(fullUri);
 
+		free(fullUri);
+		curl_free(uri);
 		deadbeef->pl_unlock();
 		deadbeef->pl_item_unref(track);
 	}
