@@ -8,9 +8,6 @@ The original[2] MPRIS plugin for DeaDBeef does not work anymore and seems
 to be orphaned. The original plugin supported MPRISv1 AND MPRISv2. This plugin
 will only support version two.
 
-This plugin should be a complete rewrite, but i ended up copying most of
-the code from the original plugin. 
-
 1: http://deadbeef.sourceforge.net/
 2: http://kernelhcy.github.io/DeaDBeeF-MPRIS-plugin/
 
