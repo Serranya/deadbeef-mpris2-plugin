@@ -234,7 +234,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			}
 		}
 
-		const char *uri = deadbeef->pl_find_meta(track, ":URI"); // TODO url encode
+		const char *uri = deadbeef->pl_find_meta(track, ":URI");
 		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
 		strcpy(fullUri, "file://");
 		strcpy(fullUri + 6, uri);
