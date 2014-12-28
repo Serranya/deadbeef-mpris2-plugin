@@ -140,6 +140,20 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	if (track != NULL) {
 		char buf[500];
 		int buf_size = sizeof(buf);
+		int64_t duration = (int64_t)deadbeef->pl_get_item_duration(track) * 1000000;
+		const char *album = deadbeef->pl_find_meta(track, "album");
+		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
+		if (albumArtist == NULL)
+			albumArtist = deadbeef->pl_find_meta(track, "album artist");
+		if (albumArtist == NULL)
+			albumArtist = deadbeef->pl_find_meta(track, "band");
+		const char *artist = deadbeef->pl_find_meta(track, "artist");
+		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
+		const char *comment = deadbeef->pl_find_meta(track, "comment");
+		const char *date = deadbeef->pl_find_meta_raw(track, "year");
+		const char *title = deadbeef->pl_find_meta(track, "title");
+		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
+		const char *uri = deadbeef->pl_find_meta(track, ":URI");
 
 		deadbeef->pl_lock();
 
@@ -147,21 +161,14 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		debug("get Metadata trackid: %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
-		int64_t duration = (int64_t)deadbeef->pl_get_item_duration(track) * 1000000;
 		debug("get Metadata duration: %" PRId64, duration);
 		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
 
-		const char *album = deadbeef->pl_find_meta(track, "album");
 		debug("get Metadata album: %s", album);
 		if (album != NULL) {
 			g_variant_builder_add(builder, "{sv}", "xesam:album", g_variant_new("s", album));
 		}
 
-		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
-		if (albumArtist == NULL)
-			albumArtist = deadbeef->pl_find_meta(track, "album artist");
-		if (albumArtist == NULL)
-			albumArtist = deadbeef->pl_find_meta(track, "band");
 		debug("get Metadata albumArtist: %s", albumArtist);
 		if (albumArtist != NULL) {
 			GVariantBuilder *albumArtistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
@@ -170,7 +177,6 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_variant_builder_unref(albumArtistBuilder);
 		}
 
-		const char *artist = deadbeef->pl_find_meta(track, "artist");
 		debug("get Metadata artist: %s", artist);
 		if (artist != NULL) {
 			GVariantBuilder *artistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
@@ -181,7 +187,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		if (mprisData->gui != NULL) {
 			debug("getting cover for album %s", album);
-			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(album,
+			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(uri,
 					artist, album, -1, coverartCallback, mprisData); //TODO callback not called :(
 			if (cover == NULL) {
 				debug("cover for %s not ready. Using default artwork", album);
@@ -193,13 +199,11 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_object_unref(cover);
 		}
 
-		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
 		debug("get Metadata lyrics: %s", lyrics);
 		if (lyrics != NULL) {
 			g_variant_builder_add(builder, "{sv}", "xesam:asText", g_variant_new("s", lyrics));
 		}
 
-		const char *comment = deadbeef->pl_find_meta(track, "comment");
 		debug("get Metadata comment: %s", comment);
 		if (comment != NULL) {
 			GVariantBuilder *commentBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
@@ -208,7 +212,6 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_variant_builder_unref(commentBuilder);
 		}
 
-		const char *date = deadbeef->pl_find_meta_raw(track, "year");
 		if (date == NULL)
 			date = deadbeef->pl_find_meta(track, "date");
 		debug("get Metadata contentCreated: %s", date); //TODO format date
@@ -218,13 +221,11 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		//TODO xesam:genre
 
-		const char *title = deadbeef->pl_find_meta(track, "title");
 		debug("get Metadata title: %s", title);
 		if (title != NULL) {
 			g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", title));
 		}
 
-		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		debug("get Metadata trackNumber: %s", trackNumber);
 		if (trackNumber != NULL) {
 			int trackNumberAsInt = atoi(trackNumber);
@@ -233,7 +234,6 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			}
 		}
 
-		const char *uri = deadbeef->pl_find_meta(track, ":URI");
 		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
 		strcpy(fullUri, "file://");
 		strcpy(fullUri + 6, uri);
