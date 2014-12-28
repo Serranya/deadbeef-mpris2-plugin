@@ -20,13 +20,13 @@ static int onStop() {
 }
 
 static int onConnect() {
-	ddb_gtkui_t *guiPlugin = (ddb_gtkui_t *)mprisData.deadbeef->plug_get_for_id (DDB_GTKUI_PLUGIN_ID);
+	DB_artwork_plugin_t *artworkPlugin = (DB_artwork_plugin_t *)mprisData.deadbeef->plug_get_for_id ("artwork");
 
-	if (guiPlugin != NULL && guiPlugin->gui.plugin.version_major == 2) {
-		debug("gtkui detected... album art support enabled");
-		mprisData.gui = guiPlugin;
+	if (artworkPlugin != NULL) {
+		debug("artwork plugin detected... album art support enabled");
+		mprisData.artwork = artworkPlugin;
 	} else {
-		debug("gtkui not detected... album art support disabled");
+		debug("artwork plugin not detected... album art support disabled");
 	}
 
 	return 0;

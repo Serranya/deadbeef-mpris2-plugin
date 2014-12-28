@@ -20,7 +20,6 @@ PKG_PROG_PKG_CONFIG
 
 LT_INIT
 
-PKG_CHECK_MODULES([GTK_DEPS], [gtk+-2.0], , AC_MSG_ERROR([GTK-2 is required for this package]))
 PKG_CHECK_MODULES([GLIB_DEPS], [glib-2.0], , AC_MSG_ERROR([glibc-2 is required for this package]))
 PKG_CHECK_MODULES([GIO_DEPS], [gio-2.0], , AC_MSG_ERROR([gio-2 is required for this package]))
 PKG_CHECK_MODULES([GTHREAD_DEPS], [gthread-2.0], , AC_MSG_ERROR([gthread-2 is required for this package]))

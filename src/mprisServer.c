@@ -7,8 +7,6 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-//TODO organize
-#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "logging.h"
 #include "mprisServer.h"
@@ -21,7 +19,6 @@
 #define CACHE_PATH "deadbeef/mpris/cover.png"
 
 void emitSeeked(float);
-static char * getCacheDir(void);
 
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
@@ -81,43 +78,11 @@ static const char xmlForNode[] =
 static GDBusConnection *globalConnection = NULL;
 static GMainLoop *loop;
 
-static char * writeCover(GdkPixbuf *cover) {
-	char *cacheDir = getCacheDir();
-	debug("Artwork saved in %s with length %d", cacheDir + 7, strlen(cacheDir) - 7);
-
-	gdk_pixbuf_save(cover, cacheDir + 7, "png", NULL, NULL);
-	return cacheDir;
-}
-
-static void coverartCallback(void *userData) {
-	debug("asynchronous loading of albumart successfull");
-	emitMetadataChanged(-1, userData);
-}
-
-static char * getCacheDir() {
-	char *cacheDir;
-
-	char *xdgCacheDir = getenv("XDG_CACHE_HOME");
-	if (xdgCacheDir != NULL) {
-		cacheDir = malloc(7 + strlen(xdgCacheDir) + 25 + 1); // strlen("file://") + strlen(xdgCacheDir) + strlen(/deadbeef/mpris/cover.png) + \0
-
-		strcpy(cacheDir, xdgCacheDir);
-	} else {
-		char *homeDir = getenv("HOME");
-		debug("%d", strlen(homeDir) + 7 + 25 + 1);
-		cacheDir = malloc(7 + strlen(homeDir) + 7 + 25 + 1); // strlen("file://") + strlen(homeDir) + strlen(/.cache) + strlen(/deadbeef/mpris/cover.png) + \0
-
-		strcpy(cacheDir, "file://");
-		strcat(cacheDir, homeDir);
-		strcat(cacheDir, "/.cache");
+static void coverartCallback(const char *fname, const char *artist, const char *album, void *userData) {
+	if (fname != NULL) { // cover was not ready
+		debug("Async loaded cover for %s", album);
+		emitMetadataChanged(-1, userData);
 	}
-	strcat(cacheDir, "/deadbeef/mpris");
-	if (access(cacheDir, F_OK) != 0) {
-		mkdir(cacheDir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH); //755
-	}
-	strcat(cacheDir, "/cover.png");
-
-	return cacheDir;
 }
 
 GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
@@ -185,18 +150,31 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_variant_builder_unref(artistBuilder);
 		}
 
-		if (mprisData->gui != NULL) {
+		if (mprisData->artwork != NULL) {
+			char *artworkPath = NULL;
+			char *albumArtUri = NULL;
+
 			debug("getting cover for album %s", album);
-			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(uri,
-					artist, album, -1, coverartCallback, mprisData); //TODO callback not called :(
-			if (cover == NULL) {
+			artworkPath = mprisData->artwork->get_album_art(uri, artist, album, -1, coverartCallback, mprisData);
+			if (artworkPath == NULL) {
 				debug("cover for %s not ready. Using default artwork", album);
-				cover = mprisData->gui->cover_get_default_pixbuf();
+				const char *defaultPath = mprisData->artwork->get_default_cover();
+				albumArtUri = malloc(strlen(defaultPath) + 7 + 1); // strlen(defaultPath) + strlen("file://") + "/0"
+
+				strcpy(albumArtUri, "file://");
+				strcpy(albumArtUri + 7, defaultPath);
+			} else {
+				debug("cover for %s ready. Artwork is: %s", album, artworkPath);
+				albumArtUri = malloc(strlen(artworkPath) + 7 + 1); // strlen(artworkPath) + strlen("file://") + "/0"
+
+				strcpy(albumArtUri, "file://");
+				strcpy(albumArtUri + 7, artworkPath);
+
+				free(artworkPath);
 			}
-			char *uri = writeCover(cover);
-			g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
-			free(uri);
-			g_object_unref(cover);
+
+			g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", albumArtUri));
+			free(albumArtUri);
 		}
 
 		debug("get Metadata lyrics: %s", lyrics);
