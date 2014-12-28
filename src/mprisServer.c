@@ -182,16 +182,15 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		if (mprisData->gui != NULL) {
 			debug("getting cover for album %s", album);
 			GdkPixbuf *cover = mprisData->gui->get_cover_art_pixbuf(album,
-					artist, album, 500, coverartCallback, mprisData);
-			if (cover != NULL) {
-				char *uri = writeCover(cover);
-				debug("cover for %s ready and written", album);
-				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
-				free(uri);
-				g_object_unref(cover);
-			} else {
-				debug("cover for %s not ready", album);
+					artist, album, -1, coverartCallback, mprisData); //TODO callback not called :(
+			if (cover == NULL) {
+				debug("cover for %s not ready. Using default artwork", album);
+				cover = mprisData->gui->cover_get_default_pixbuf();
 			}
+			char *uri = writeCover(cover);
+			g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", uri));
+			free(uri);
+			g_object_unref(cover);
 		}
 
 		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
