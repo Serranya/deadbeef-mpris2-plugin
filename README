@@ -19,7 +19,6 @@ will only support version two.
 	interface.
 
 ===== Known Issues =====
-- Artwork does not update correctly if you skip very fast through multiple tracks.
 - mpris.la is installed but not needed.
 
 ===== How to install =====
@@ -31,7 +30,7 @@ will only support version two.
 - make install
 
 ==== For Users ====
-- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.4/deadbeef-mpris2-plugin-1.4.tar.xz
+- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.4/deadbeef-mpris2-plugin-1.5.tar.xz
 - ./configure
 - make install
 
