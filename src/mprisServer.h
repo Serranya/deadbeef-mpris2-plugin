@@ -1,7 +1,6 @@
 #ifndef MPRISSERVER_H_
 #define MPRISSERVER_H_
 
-//TODO make optional
 #include <gio/gio.h>
 
 #define DDB_API_LEVEL 7
