@@ -214,7 +214,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
 		strcpy(fullUri, "file://");
-		strcpy(fullUri + 6, uri);
+		strcpy(fullUri + 7, uri);
 		debug("get Metadata URI: %s", fullUri);
 		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullUri));
 		free(fullUri);
