@@ -368,7 +368,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
 			char buf[200];
 			sprintf(buf, "/DeaDBeeF/playlist/%d", playid);
-			if (strcmp(buf, trackId) == 0) { //TODO handle different tracks
+			if (strcmp(buf, trackId) == 0) {
 				deadbeef->sendmessage(DB_EV_SEEK, 0, position / 1000.0, 0);
 			}
 			deadbeef->pl_item_unref(track);
