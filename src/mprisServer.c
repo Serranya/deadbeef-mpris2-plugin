@@ -426,7 +426,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			}
 		}
 	} else if (strcmp(propertyName, "LoopStatus") == 0) {
-		int loop = deadbeef->conf_get_int("playback.loop", 0);
+		int loop = deadbeef->conf_get_int("playback.loop", PLAYBACK_MODE_LOOP_ALL);
 
 		switch (loop) {
 		case PLAYBACK_MODE_NOLOOP:
