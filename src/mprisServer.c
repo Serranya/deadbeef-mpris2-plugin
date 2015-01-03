@@ -120,7 +120,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		deadbeef->pl_lock();
 
-		sprintf(buf, "/org/mpris/MediaPlayer2/DeaDBeeF/playlist/%d", id);
+		sprintf(buf, "/DeaDBeeF/playlist/%d", id);
 		debug("get Metadata trackid: %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
@@ -367,7 +367,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			ddb_playlist_t *pl = deadbeef->plt_get_curr();
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
 			char buf[200];
-			sprintf(buf, "/org/mpris/MediaPlayer2/DeaDBeeF/playlist/%d", playid);
+			sprintf(buf, "/DeaDBeeF/playlist/%d", playid);
 			if (strcmp(buf, trackId) == 0) { //TODO handle different tracks
 				deadbeef->sendmessage(DB_EV_SEEK, 0, position / 1000.0, 0);
 			}
