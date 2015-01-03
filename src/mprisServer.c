@@ -117,10 +117,11 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		const char *title = deadbeef->pl_find_meta(track, "title");
 		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		const char *uri = deadbeef->pl_find_meta(track, ":URI");
+		const int playlistIndex = deadbeef->plt_get_curr_idx();
 
 		deadbeef->pl_lock();
 
-		sprintf(buf, "/DeaDBeeF/playlist/%d", id);
+		sprintf(buf, "/DeaDBeeF/%d/%d", playlistIndex, id);
 		debug("get Metadata trackid: %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
@@ -366,8 +367,9 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		if (track != NULL) {
 			ddb_playlist_t *pl = deadbeef->plt_get_curr();
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
+			int playlistIndex = deadbeef->plt_get_curr_idx();
 			char buf[200];
-			sprintf(buf, "/DeaDBeeF/playlist/%d", playid);
+			sprintf(buf, "/DeaDBeeF/%d/%d", playlistIndex, playid);
 			if (strcmp(buf, trackId) == 0) {
 				deadbeef->sendmessage(DB_EV_SEEK, 0, position / 1000.0, 0);
 			}
