@@ -18,8 +18,6 @@
 #define CURRENT_TRACK -1
 #define CACHE_PATH "deadbeef/mpris/cover.png"
 
-void emitSeeked(float);
-
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
 	"	<interface name='org.mpris.MediaPlayer2'>"
