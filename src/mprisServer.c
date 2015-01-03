@@ -605,6 +605,51 @@ void emitPlaybackStatusChanged(int status) {
 	g_variant_builder_unref(builder);
 }
 
+void emitLoopStatusChanged(int status) {
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
+
+	switch (status) {
+	case PLAYBACK_MODE_NOLOOP:
+		g_variant_builder_add(builder, "{sv}", "LoopStatus", g_variant_new_string("None"));
+		break;
+	case PLAYBACK_MODE_LOOP_ALL:
+		g_variant_builder_add(builder, "{sv}", "LoopStatus", g_variant_new_string("Playlist"));
+		break;
+	case PLAYBACK_MODE_LOOP_SINGLE:
+		g_variant_builder_add(builder, "{sv}", "LoopStatus", g_variant_new_string("Track"));
+		break;
+	default:
+		g_variant_builder_add(builder, "{sv}", "LoopStatus", g_variant_new_string("None"));
+		break;
+	}
+	GVariant *signal[] = {
+		g_variant_new_string(PLAYER_INTERFACE),
+		g_variant_builder_end(builder),
+		g_variant_new_strv(NULL, 0)
+	};
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+			g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
+}
+
+void emitShuffleStatusChanged(int status) {
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
+
+	g_variant_builder_add(builder, "{sv}", "Shuffle", g_variant_new_boolean(status != PLAYBACK_ORDER_LINEAR));
+	GVariant *signal[] = {
+		g_variant_new_string(PLAYER_INTERFACE),
+		g_variant_builder_end(builder),
+		g_variant_new_strv(NULL, 0)
+	};
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+			g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
+}
+
 static void onBusAcquiredHandler(GDBusConnection *connection, const char *name, void *userData) {
 	globalConnection = connection;
 	debug("Bus accquired");

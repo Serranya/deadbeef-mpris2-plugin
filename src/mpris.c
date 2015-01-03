@@ -6,7 +6,13 @@
 static GThread *mprisThread;
 static struct MprisData mprisData;
 
+static int oldLoopStatus = -1;
+static int oldShuffleStatus = -1;
+
 static int onStart() {
+	oldLoopStatus = mprisData.deadbeef->conf_get_int("playback.loop", 0);
+	oldShuffleStatus = mprisData.deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR);
+
 	mprisThread = g_thread_new("mpris-listener", startServer, (void *)&mprisData);
 
 	return 0;
@@ -38,29 +44,29 @@ static int onConnect() {
 //* - Metadata          *
 //* - Volume            *
 //* - Seeked            *
+//* - Loop status       *
+//* - Shuffle status    *
 //***********************
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 	static int lastState = -1;
 	DB_functions_t *deadbeef = mprisData.deadbeef;
 
-	//TODO Add DB_EV_CONFIGCHANGED handler for playback.loop to update LoopStatus property
-	//TODO Add DB_EV_CONFIGCHANGED handler for playback.order to update Shuffle property
 	switch (id) {
 		case DB_EV_SEEKED:
-			debug("DB_EV_SEEKED event recieved");
+			debug("DB_EV_SEEKED event received");
 			emitSeeked(((ddb_event_playpos_t *) ctx)->playpos);
 			break;
 		case DB_EV_TRACKINFOCHANGED:
-			debug("DB_EV_TRACKINFOCHANGED event recieved");
+			debug("DB_EV_TRACKINFOCHANGED event received");
 			emitMetadataChanged(-1, &mprisData);
 			break;
 		case DB_EV_SONGSTARTED:
-			debug("DB_EV_SONGSTARTED event recieved");
+			debug("DB_EV_SONGSTARTED event received");
 			emitMetadataChanged(-1, &mprisData);
 			emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING);
 			break;
 		case DB_EV_PAUSED:
-			debug("DB_EV_PAUSED event recieved");
+			debug("DB_EV_PAUSED event received");
 			debug("PlayPause toggled... last state %d", lastState);
 			switch (lastState) {
 				case -1:
@@ -77,12 +83,27 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			}
 			break;
 		case DB_EV_STOP:
-			debug("DB_EV_STOP event recieved");
+			debug("DB_EV_STOP event received");
 			emitPlaybackStatusChanged(OUTPUT_STATE_STOPPED);
 			break;
 		case DB_EV_VOLUMECHANGED:
-			debug("DB_EV_VOLUMECHANGED event recieved");
+			debug("DB_EV_VOLUMECHANGED event received");
 			emitVolumeChanged(deadbeef->volume_get_db());
+			break;
+		case DB_EV_CONFIGCHANGED:
+			debug("DB_EV_CONFIGCHANGED event received");
+			if (oldShuffleStatus != -1) {
+				int newLoopStatus = mprisData.deadbeef->conf_get_int("playback.loop", PLAYBACK_MODE_LOOP_ALL);
+				int newShuffleStatus = mprisData.deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR);
+
+				if (newLoopStatus != oldLoopStatus) {
+					debug("LoopStatus changed %d", newLoopStatus);
+					emitLoopStatusChanged(oldLoopStatus = newLoopStatus);
+				} if (newShuffleStatus != oldShuffleStatus) {
+					debug("ShuffleStatus changed %d", newShuffleStatus);
+					emitShuffleStatusChanged(oldShuffleStatus = newShuffleStatus);
+				}
+			}
 			break;
 		default:
 			break;

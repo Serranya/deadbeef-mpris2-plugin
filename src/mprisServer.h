@@ -21,5 +21,7 @@ void emitVolumeChanged(float);
 void emitSeeked(float);
 void emitMetadataChanged(int, struct MprisData*);
 void emitPlaybackStatusChanged(int);
+void emitLoopStatusChanged(int);
+void emitShuffleStatusChanged(int);
 
 #endif
