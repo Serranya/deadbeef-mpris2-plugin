@@ -30,7 +30,7 @@ will only support version two.
 - make install
 
 ==== For Users ====
-- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.4/deadbeef-mpris2-plugin-1.5.tar.xz
+- Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.6/deadbeef-mpris2-plugin-1.6.tar.xz
 - ./configure
 - make install
 
