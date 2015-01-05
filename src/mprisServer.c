@@ -117,6 +117,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		const char *title = deadbeef->pl_find_meta(track, "title");
 		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		const char *uri = deadbeef->pl_find_meta(track, ":URI");
+		const char *genres = deadbeef->pl_find_meta(track, "genre");
 		const int playlistIndex = deadbeef->plt_get_curr_idx();
 
 		deadbeef->pl_lock();
@@ -196,7 +197,23 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			g_variant_builder_add(builder, "{sv}", "xesam:contentCreated", g_variant_new("s", date));
 		}
 
-		//TODO xesam:genre
+		debug("get Metdata genres: %s", genres);
+		if (genres != NULL) {
+			char *genresCpy = malloc(strlen(genres) + 1);
+			strcpy(genresCpy, genres);
+			GVariantBuilder *genreBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
+
+			char *genre = strtok(genresCpy, "\n");
+
+			while (genre != NULL) {
+				debug("genre is %s with length %d", genre, strlen(genre));
+				g_variant_builder_add(genreBuilder, "s", genre);
+				genre = strtok(NULL, "\n");
+			}
+
+			g_variant_builder_add(builder, "{sv}", "xesam:genre", g_variant_builder_end(genreBuilder));
+			g_variant_builder_unref(genreBuilder);
+		}
 
 		debug("get Metadata title: %s", title);
 		if (title != NULL) {
