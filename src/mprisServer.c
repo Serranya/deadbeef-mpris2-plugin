@@ -383,7 +383,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 
 		g_variant_get(parameters, "(&s)", &uri);
 		debug("OpenUri: %s\n", uri);
-		//TODO it is probably better to create a new playlist for that
+		//TODO it is probably better to create a new playlist for that. Maybe we can even play it without playlist
 		ddb_playlist_t *pl = deadbeef->plt_get_curr();
 		int ret = deadbeef->plt_add_file2(0, pl, uri, NULL, NULL);
 		if (ret == 0) {
