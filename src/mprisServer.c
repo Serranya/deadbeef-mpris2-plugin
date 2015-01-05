@@ -213,6 +213,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 			g_variant_builder_add(builder, "{sv}", "xesam:genre", g_variant_builder_end(genreBuilder));
 			g_variant_builder_unref(genreBuilder);
+			free(genresCpy);
 		}
 
 		debug("get Metadata title: %s", title);
