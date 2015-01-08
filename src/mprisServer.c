@@ -186,7 +186,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		if (comment != NULL) {
 			GVariantBuilder *commentBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
 			g_variant_builder_add(commentBuilder, "s", comment);
-			g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_builder_end(commentBuilder));
+			g_variant_builder_add(builder, "{sv}", "xesam:comment", g_variant_builder_end(commentBuilder));
 			g_variant_builder_unref(commentBuilder);
 		}
 
