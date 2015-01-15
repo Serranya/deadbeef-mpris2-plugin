@@ -22,6 +22,7 @@ will only support version two.
 - mpris.la is installed but not needed.
 
 ===== How to install =====
+
 ==== For Developers ====
 - git clone https://github.com/Serranya/deadbeef-mpris2-plugin.git
 - cd deadbeef-mpris2-plugin
