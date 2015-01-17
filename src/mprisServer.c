@@ -159,10 +159,12 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			if (artworkPath == NULL) {
 				debug("cover for %s not ready. Using default artwork", album);
 				const char *defaultPath = mprisData->artwork->get_default_cover();
-				albumArtUri = malloc(strlen(defaultPath) + 7 + 1); // strlen(defaultPath) + strlen("file://") + "/0"
+				if (defaultPath != NULL) {
+					albumArtUri = malloc(strlen(defaultPath) + 7 + 1); // strlen(defaultPath) + strlen("file://") + "/0"
 
-				strcpy(albumArtUri, "file://");
-				strcpy(albumArtUri + 7, defaultPath);
+					strcpy(albumArtUri, "file://");
+					strcpy(albumArtUri + 7, defaultPath);
+				}
 			} else {
 				debug("cover for %s ready. Artwork is: %s", album, artworkPath);
 				albumArtUri = malloc(strlen(artworkPath) + 7 + 1); // strlen(artworkPath) + strlen("file://") + "/0"
@@ -173,8 +175,10 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 				free(artworkPath);
 			}
 
-			g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", albumArtUri));
-			free(albumArtUri);
+			if (albumArtUri != NULL) {
+				g_variant_builder_add(builder, "{sv}", "mpris:artUrl", g_variant_new("s", albumArtUri));
+				free(albumArtUri);
+			}
 		}
 
 		debug("get Metadata lyrics: %s", lyrics);
