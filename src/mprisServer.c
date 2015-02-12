@@ -22,13 +22,13 @@ static const char xmlForNode[] =
 	"	<interface name='org.mpris.MediaPlayer2'>"
 	"		<method name='Raise'/>"
 	"		<method name='Quit'/>"
-	"		<property access='read'	name='CanQuit'				type='b'/>"
-	"		<property access='read'	name='CanRaise'				type='b'/>"
-	"		<property access='read'	name='HasTrackList'			type='b'/>"
-	"		<property access='read'	name='Identity'				type='s'/>"
-	"		<property access='read' name='DesktopEntry'			type='s'/>"
-	"		<property access='read'	name='SupportedUriSchemes'	type='as'/>"
-	"		<property access='read'	name='SupportedMimeTypes'	type='as'/>"
+	"		<property access='read'	name='CanQuit'             type='b'/>"
+	"		<property access='read'	name='CanRaise'            type='b'/>"
+	"		<property access='read'	name='HasTrackList'        type='b'/>"
+	"		<property access='read'	name='Identity'            type='s'/>"
+	"		<property access='read' name='DesktopEntry'        type='s'/>"
+	"		<property access='read'	name='SupportedUriSchemes' type='as'/>"
+	"		<property access='read'	name='SupportedMimeTypes'  type='as'/>"
 	"	</interface>"
 	"	<interface name='org.mpris.MediaPlayer2.Player'>"
 	"		<method name='Next'/>"
@@ -38,35 +38,35 @@ static const char xmlForNode[] =
 	"		<method name='Stop'/>"
 	"		<method name='Play'/>"
 	"		<method name='Seek'>"
-	"			<arg name='Offset'		type='x'/>"
+	"			<arg name='Offset'      type='x'/>"
 	"		</method>"
 	"		<method name='SetPosition'>"
-	"			<arg name='TrackId'		type='o'/>"
-	"			<arg name='Position'	type='x'/>"
+	"			<arg name='TrackId'     type='o'/>"
+	"			<arg name='Position'    type='x'/>"
 	"		</method>"
 	"		<method name='OpenUri'>"
-	"			<arg name='Uri'			type='s'/>"
+	"			<arg name='Uri'         type='s'/>"
 	"		</method>"
 	"		<signal name='Seeked'>"
-	"			<arg name='Position'	type='x' direction='out'/>"
+	"			<arg name='Position'    type='x' direction='out'/>"
 	"		</signal>"
-	"		<property access='read'			name='PlaybackStatus'	type='s'/>"
-	"		<property access='readwrite'	name='LoopStatus'		type='s'/>"
-	"		<property access='readwrite'	name='Rate'				type='d'/>"
-	"		<property access='readwrite'	name='Shuffle'			type='b'/>"
-	"		<property access='read'			name='Metadata'			type='a{sv}'/>"
-	"		<property access='readwrite'	name='Volume'			type='d'/>"
-	"		<property access='read'			name='Position'			type='x'>"
+	"		<property access='read'	     name='PlaybackStatus' type='s'/>"
+	"		<property access='readwrite' name='LoopStatus'     type='s'/>"
+	"		<property access='readwrite' name='Rate'           type='d'/>"
+	"		<property access='readwrite' name='Shuffle'        type='b'/>"
+	"		<property access='read'      name='Metadata'       type='a{sv}'/>"
+	"		<property access='readwrite' name='Volume'         type='d'/>"
+	"		<property access='read'      name='Position'       type='x'>"
 	"			<annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false'/>"
 	"		</property>"
-	"		<property access='read'			name='MinimumRate'		type='d'/>"
-	"		<property access='read'			name='MaximumRate'		type='d'/>"
-	"		<property access='read'			name='CanGoNext'		type='b'/>"
-	"		<property access='read'			name='CanGoPrevious'	type='b'/>"
-	"		<property access='read'			name='CanPlay'			type='b'/>"
-	"		<property access='read'			name='CanPause'			type='b'/>"
-	"		<property access='read'			name='CanSeek'			type='b'/>"
-	"		<property access='read'			name='CanControl'		type='b'>"
+	"		<property access='read'         name='MinimumRate'   type='d'/>"
+	"		<property access='read'         name='MaximumRate'   type='d'/>"
+	"		<property access='read'         name='CanGoNext'     type='b'/>"
+	"		<property access='read'         name='CanGoPrevious' type='b'/>"
+	"		<property access='read'         name='CanPlay'       type='b'/>"
+	"		<property access='read'         name='CanPause'      type='b'/>"
+	"		<property access='read'         name='CanSeek'       type='b'/>"
+	"		<property access='read'         name='CanControl'    type='b'>"
 	"			<annotation name='org.freedesktop.DBus.Property.EmitsChangedSignal' value='false'/>"
 	"		</property>"
 	"	</interface>"
@@ -249,8 +249,8 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 }
 
 static void onRootMethodCallHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
-		const char *interfaceName, const char *methodName, GVariant *parameters, GDBusMethodInvocation *invocation,
-		void *userData) {
+                                    const char *interfaceName, const char *methodName, GVariant *parameters,
+                                    GDBusMethodInvocation *invocation, void *userData) {
 	debug("Method call on root interface. sender: %s, methodName %s", sender, methodName);
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
@@ -262,12 +262,13 @@ static void onRootMethodCallHandler(GDBusConnection *connection, const char *sen
 	} else {
 		debug("Error! Unsupported method. %s.%s", interfaceName, methodName);
 		g_dbus_method_invocation_return_error(invocation, G_DBUS_ERROR, G_DBUS_ERROR_NOT_SUPPORTED,
-				"Method %s.%s not supported", interfaceName, methodName);
+                                              "Method %s.%s not supported", interfaceName, methodName);
 	}
 }
 
 static GVariant* onRootGetPropertyHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
-		const char *interfaceName, const char *propertyName, GError **error, void *userData) {
+                                          const char *interfaceName, const char *propertyName, GError **error,
+                                          void *userData) {
 	debug("Get property call on root interface. sender: %s, propertyName: %s", sender, propertyName);
 	GVariant *result = NULL;
 
@@ -323,8 +324,8 @@ static const GDBusInterfaceVTable rootInterfaceVTable = {
 };
 
 static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
-		const char *interfaceName, const char *methodName, GVariant *parameters, GDBusMethodInvocation *invocation,
-		void *userData) {
+                                      const char *interfaceName, const char *methodName, GVariant *parameters,
+                                      GDBusMethodInvocation *invocation, void *userData) {
 	debug("Method call on Player interface. sender: %s, methodName %s", sender, methodName);
 	debug("Parameter signature is %s", g_variant_get_type_string (parameters));
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
@@ -419,12 +420,13 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 	} else {
 		debug("Error! Unsupported method. %s.%s", interfaceName, methodName);
 		g_dbus_method_invocation_return_error(invocation, G_DBUS_ERROR, G_DBUS_ERROR_NOT_SUPPORTED,
-				"Method %s.%s not supported", interfaceName, methodName);
+                                              "Method %s.%s not supported", interfaceName, methodName);
 	}
 }
 
 static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
-		const char *interfaceName, const char *propertyName, GError **error, void *userData) {
+                                            const char *interfaceName, const char *propertyName, GError **error,
+                                            void *userData) {
 	debug("Get property call on Player interface. sender: %s, propertyName: %s", sender, propertyName);
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 	GVariant *result = NULL;
@@ -507,7 +509,8 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 }
 
 static int onPlayerSetPropertyHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
-		const char *interfaceName, const char *propertyName, GVariant *value, GError **error, gpointer userData) {
+                                      const char *interfaceName, const char *propertyName, GVariant *value,
+                                      GError **error, gpointer userData) {
 	debug("Set property call on Player interface. sender: %s, propertyName: %s", sender, propertyName);
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
@@ -572,7 +575,7 @@ void emitVolumeChanged(float volume) {
 	};
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
-			g_variant_new_tuple(signal, 3), NULL);
+                                  g_variant_new_tuple(signal, 3), NULL);
 
 	g_variant_builder_unref(builder);
 }
@@ -582,7 +585,7 @@ void emitSeeked(float position) {
 	debug("Seeked to %" PRId64, positionInMicroseconds);
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PLAYER_INTERFACE, "Seeked",
-			g_variant_new("(x)", positionInMicroseconds), NULL);
+                                  g_variant_new("(x)", positionInMicroseconds), NULL);
 }
 
 void emitMetadataChanged(int trackId, struct MprisData *userData) {
@@ -596,7 +599,7 @@ void emitMetadataChanged(int trackId, struct MprisData *userData) {
 	};
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
-			g_variant_new_tuple(signal, 3), NULL);
+                                  g_variant_new_tuple(signal, 3), NULL);
 
 	g_variant_builder_unref(builder);
 }
@@ -623,7 +626,7 @@ void emitPlaybackStatusChanged(int status) {
 	};
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
-			g_variant_new_tuple(signal, 3), NULL);
+                                  g_variant_new_tuple(signal, 3), NULL);
 
 	g_variant_builder_unref(builder);
 }
@@ -652,7 +655,7 @@ void emitLoopStatusChanged(int status) {
 	};
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
-			g_variant_new_tuple(signal, 3), NULL);
+                                  g_variant_new_tuple(signal, 3), NULL);
 
 	g_variant_builder_unref(builder);
 }
@@ -668,7 +671,7 @@ void emitShuffleStatusChanged(int status) {
 	};
 
 	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
-			g_variant_new_tuple(signal, 3), NULL);
+                                  g_variant_new_tuple(signal, 3), NULL);
 
 	g_variant_builder_unref(builder);
 }
@@ -684,10 +687,10 @@ static void onNameAcquiredHandler(GDBusConnection *connection, const char *name,
 
 	debug("Registering" OBJECT_NAME "object...");
 	g_dbus_connection_register_object(connection, OBJECT_NAME, interfaces[0], &rootInterfaceVTable, userData, NULL,
-			NULL);
+                                      NULL);
 
 	g_dbus_connection_register_object(connection, OBJECT_NAME, interfaces[1], &playerInterfaceVTable, userData, NULL,
-			NULL);
+                                      NULL);
 }
 
 static void onConnotConnectToBus(GDBusConnection *connection, const char *name, void *user_data){
@@ -705,7 +708,8 @@ void* startServer(void *data) {
 	mprisData->gdbusNodeInfo = g_dbus_node_info_new_for_xml(xmlForNode, NULL);
 
 	ownerId = g_bus_own_name(G_BUS_TYPE_SESSION, BUS_NAME, G_BUS_NAME_OWNER_FLAGS_REPLACE,
-			onBusAcquiredHandler, onNameAcquiredHandler, onConnotConnectToBus, (void *)mprisData, NULL);
+                             onBusAcquiredHandler, onNameAcquiredHandler, onConnotConnectToBus,
+                             (void *)mprisData, NULL);
 
 	loop = g_main_loop_new(context, FALSE);
 	g_main_loop_run(loop);
