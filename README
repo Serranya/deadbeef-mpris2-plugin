@@ -28,6 +28,8 @@ will only support version two.
 
 ==== For Users ====
 - Grab the tarball from https://github.com/Serranya/deadbeef-mpris2-plugin/releases/download/v1.8/deadbeef-mpris2-plugin-1.8.tar.xz
+- tar -xf deadbeef-mpris2-plugin-1.8.tar.xz
+- cd deadbeef-mpris-plugin-1.8
 - ./configure
 - make install
 
