@@ -13,14 +13,22 @@ static int onStart() {
 	oldLoopStatus = mprisData.deadbeef->conf_get_int("playback.loop", 0);
 	oldShuffleStatus = mprisData.deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR);
 
+#if (GLIB_MAJOR_VERSION <= 2 && GLIB_MINOR_VERSION < 32)
+	mprisThread = g_thread_create(startServer, (void *)&mprisData, TRUE, NULL);
+#else
 	mprisThread = g_thread_new("mpris-listener", startServer, (void *)&mprisData);
-
+#endif
 	return 0;
 }
 
 static int onStop() {
 	stopServer();
+
+#if (GLIB_MAJOR_VERSION <= 2 && GLIB_MINOR_VERSION < 32)
+	g_thread_join(mprisThread);
+#else
 	g_thread_unref(mprisThread);
+#endif
 
 	return 0;
 }

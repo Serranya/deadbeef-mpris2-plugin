@@ -1,7 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
 
-# Use AC_PROG_CC_C99 and check ac_cv_prog_cc_c99 is yes not no
-
 AC_PREREQ([2.69])
 AC_INIT([deadbeef-mpris2-plugin], [1.8], [peterlamby@web.de], [DeaDBeeF MPRIS2 Plugin], [https://github.com/Serranya/deadbeef-mpris2-plugin])
 AC_CONFIG_SRCDIR([src/mpris.c])
