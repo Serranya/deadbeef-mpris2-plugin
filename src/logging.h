@@ -1,7 +1,8 @@
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
-//#define MPRIS__DEBUG
+void logDebug (const char *fmt, ...);
+void logError (const char *fmt, ...);
 
 #ifndef MPRIS__DEBUG
 	#define debug(...)
