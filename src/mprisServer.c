@@ -352,7 +352,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_STOP, 0, 0, 0);
 	} else if (strcmp(methodName, "Play") == 0) {
-		if (!deadbeef->get_output()->state() == OUTPUT_STATE_PLAYING)
+		if (deadbeef->get_output()->state() != OUTPUT_STATE_PLAYING)
 			deadbeef->sendmessage(DB_EV_PLAY_CURRENT, 0, 0, 0);
 		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else if (strcmp(methodName, "Seek") == 0) {
