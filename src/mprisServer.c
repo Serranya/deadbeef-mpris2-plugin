@@ -378,6 +378,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			deadbeef->pl_item_unref(track);
 			emitSeeked(newPositionInMilliseconds);
 		}
+		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else if (strcmp(methodName, "SetPosition") == 0) {
 		int64_t position = 0;
 		const char *trackId = NULL;
