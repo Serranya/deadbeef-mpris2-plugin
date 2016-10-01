@@ -28,7 +28,7 @@ AS_IF([test "x$ac_cv_prog_cc_c99" = "xno"], AC_MSG_ERROR([C99 Support is require
 
 AC_ARG_ENABLE(debug,
               AS_HELP_STRING([--enable-debug], [The plugin will print debug options to stdout.]),
-              AC_DEFINE([MPRIS_DEBUG]))
+              AC_DEFINE([MPRIS__DEBUG]))
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
