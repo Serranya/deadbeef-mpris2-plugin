@@ -362,7 +362,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			float durationInMilliseconds = deadbeef->pl_get_item_duration(track) * 1000.0;
 			float positionInMilliseconds= deadbeef->streamer_get_playpos() * 1000.0;
 			int64_t offsetInMicroseconds;
-			g_variant_get(parameters, "x", &offsetInMicroseconds);
+			g_variant_get(parameters, "(x)", &offsetInMicroseconds);
 			float offsetInMilliseconds = offsetInMicroseconds / 1000.0;
 
 			float newPositionInMilliseconds = positionInMilliseconds + offsetInMilliseconds;
