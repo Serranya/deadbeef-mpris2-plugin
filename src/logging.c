@@ -18,3 +18,4 @@ void logError (const char *fmt, ...) {
 	fprintf(stderr, "\e[0m\n");
 	va_end(arg_ptr);
 }
+
