@@ -121,7 +121,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		deadbeef->pl_lock();
 
-		sprintf(buf, "/DeaDBeeF/%d/%d", playlistIndex, id);
+		sprintf(buf, "/org/mpris/MediaPlayer2/TrackList/NoTrack");
 		debug("get Metadata trackid: %s", buf);
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
