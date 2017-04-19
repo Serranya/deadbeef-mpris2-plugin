@@ -508,6 +508,8 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			if (track) {
 				result = g_variant_new_boolean((deadbeef->pl_get_item_duration (track) > 0));
 				deadbeef->pl_item_unref(track);
+			} else {
+				result = g_variant_new_boolean(FALSE);
 			}
 		} else {
 			result = g_variant_new_boolean(FALSE);
