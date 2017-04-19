@@ -392,7 +392,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
 			int playlistIndex = deadbeef->plt_get_curr_idx();
 			char buf[200];
-			sprintf(buf, "/DeaDBeeF/%d/%d", playlistIndex, playid);
+			sprintf(buf, "/org/mpris/MediaPlayer2/TrackList/NoTrack");
 			if (strcmp(buf, trackId) == 0) {
 				deadbeef->sendmessage(DB_EV_SEEK, 0, position / 1000.0, 0);
 			}
