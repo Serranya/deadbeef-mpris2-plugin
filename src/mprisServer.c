@@ -102,7 +102,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	if (track != NULL) {
 		char buf[500];
 		int buf_size = sizeof(buf);
-		float duration = deadbeef->pl_get_item_duration(track);
+		int64_t duration = deadbeef->pl_get_item_duration(track) * 1000000;
 		const char *album = deadbeef->pl_find_meta(track, "album");
 		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
 		if (albumArtist == NULL)
