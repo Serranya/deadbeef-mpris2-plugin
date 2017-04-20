@@ -400,7 +400,7 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 			}
 			deadbeef->pl_item_unref(track);
 			deadbeef->plt_unref(pl);
-			emitSeeked(deadbeef->streamer_get_playpos() * 1000.0);
+			emitSeeked(deadbeef->streamer_get_playpos());
 		}
 		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else if (strcmp(methodName, "OpenUri") == 0) {
