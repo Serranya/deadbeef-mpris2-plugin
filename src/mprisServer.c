@@ -504,7 +504,18 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	} else if (strcmp(propertyName, "CanPause") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanSeek") == 0) {
-		result = g_variant_new_boolean(TRUE);
+		DB_output_t *output = deadbeef->get_output();
+		if (output) {
+			DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+			if (track) {
+				result = g_variant_new_boolean((deadbeef->pl_get_item_duration (track) > 0));
+				deadbeef->pl_item_unref(track);
+			} else {
+				result = g_variant_new_boolean(FALSE);
+			}
+		} else {
+			result = g_variant_new_boolean(FALSE);
+		}
 	} else if (strcmp(propertyName, "CanControl") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	}
