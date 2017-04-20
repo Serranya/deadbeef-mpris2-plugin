@@ -86,18 +86,20 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	int id;
 	DB_playItem_t *track = NULL;
 	DB_functions_t *deadbeef = mprisData->deadbeef;
-	ddb_playlist_t *pl = deadbeef->plt_get_curr();
+	ddb_playlist_t *pl;
 	GVariant *tmp;
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+	int playlistIndex;
 
-	if (track_id < 0) {
-		track = deadbeef->streamer_get_playing_track();
+	track = deadbeef->streamer_get_playing_track();
+	if (track) {
+		pl = deadbeef->plt_get_for_idx(deadbeef->streamer_get_current_playlist());
 		id = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
-	} else {
-		track = deadbeef->plt_get_item_for_idx(pl, track_id, PL_MAIN);
-		id = track_id;
+		playlistIndex = deadbeef->streamer_get_current_playlist();
 	}
-	deadbeef->plt_unref(pl);
+	if (pl) {
+		deadbeef->plt_unref(pl);
+	}
 
 	if (track != NULL) {
 		char buf[500];
@@ -117,7 +119,6 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		const char *uri = deadbeef->pl_find_meta(track, ":URI");
 		const char *genres = deadbeef->pl_find_meta(track, "genre");
-		const int playlistIndex = deadbeef->plt_get_curr_idx();
 
 		deadbeef->pl_lock();
 
@@ -243,6 +244,9 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 
 		deadbeef->pl_unlock();
 		deadbeef->pl_item_unref(track);
+	} else {
+		debug("get Metadata trackid: /org/mpris/MediaPlayer2/TrackList/NoTrack");
+		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", "/org/mpris/MediaPlayer2/TrackList/NoTrack"));
 	}
 	tmp = g_variant_builder_end(builder);
 	g_variant_builder_unref(builder);
@@ -403,9 +407,9 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
 
 		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
 		if (track != NULL) {
-			ddb_playlist_t *pl = deadbeef->plt_get_curr();
+			ddb_playlist_t *pl = deadbeef->plt_get_for_idx(deadbeef->streamer_get_current_playlist());
 			int playid = deadbeef->plt_get_item_idx(pl, track, PL_MAIN);
-			int playlistIndex = deadbeef->plt_get_curr_idx();
+			int playlistIndex = deadbeef->streamer_get_current_playlist();
 			char buf[200];
 			sprintf(buf, "/DeaDBeeF/%d/%d", playlistIndex, playid);
 			if (strcmp(buf, trackId) == 0) {
