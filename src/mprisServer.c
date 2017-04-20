@@ -102,9 +102,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	if (track != NULL) {
 		char buf[500];
 		int buf_size = sizeof(buf);
-		float origDuration = deadbeef->pl_get_item_duration(track);
-		if (origDuration < 0) origDuration = 0;
-		int64_t duration = (int64_t) origDuration * 1000000;
+		float duration = deadbeef->pl_get_item_duration(track);
 		const char *album = deadbeef->pl_find_meta(track, "album");
 		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
 		if (albumArtist == NULL)
@@ -128,7 +126,9 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		g_variant_builder_add(builder, "{sv}", "mpris:trackid", g_variant_new("o", buf));
 
 		debug("get Metadata duration: %" PRId64, duration);
-		g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
+		if (duration > 0) {
+			g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
+		}
 
 		debug("get Metadata album: %s", album);
 		if (album != NULL) {
