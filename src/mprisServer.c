@@ -615,8 +615,9 @@ void emitMetadataChanged(int trackId, struct MprisData *userData) {
 	g_variant_builder_unref(builder);
 }
 
-void emitPlaybackStatusChanged(int status) {
+void emitPlaybackStatusChanged(int status, struct MprisData *userData) {
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 
 	switch (status) {
 		case OUTPUT_STATE_PLAYING:
@@ -630,6 +631,19 @@ void emitPlaybackStatusChanged(int status) {
 			g_variant_builder_add(builder, "{sv}", "PlaybackStatus", g_variant_new_string("Stopped"));
 			break;
 	}
+
+	gboolean can_seek = FALSE;
+	DB_output_t *output = deadbeef->get_output();
+	if (output) {
+		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+		if (track) {
+			can_seek = deadbeef->pl_get_item_duration(track) > 0;
+			deadbeef->pl_item_unref(track);
+		}
+	}
+	g_variant_builder_add(builder, "{sv}", "CanSeek", g_variant_new_boolean(can_seek));
+
+
 	GVariant *signal[] = {
 		g_variant_new_string(PLAYER_INTERFACE),
 		g_variant_builder_end(builder),
