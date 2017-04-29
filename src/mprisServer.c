@@ -250,6 +250,19 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	return tmp;
 }
 
+gboolean deadbeef_can_seek(DB_functions_t *deadbeef) {
+	gboolean can_seek = FALSE;
+	DB_output_t *output = deadbeef->get_output();
+	if (output) {
+		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
+		if (track) {
+			can_seek = deadbeef->pl_get_item_duration(track) > 0;
+			deadbeef->pl_item_unref(track);
+		}
+	}
+	return can_seek;
+}
+
 static void onRootMethodCallHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
                                     const char *interfaceName, const char *methodName, GVariant *parameters,
                                     GDBusMethodInvocation *invocation, void *userData) {
@@ -504,15 +517,7 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 	} else if (strcmp(propertyName, "CanPause") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanSeek") == 0) {
-		result = g_variant_new_boolean(FALSE);
-		DB_output_t *output = deadbeef->get_output();
-		if (output) {
-			DB_playItem_t *track = deadbeef->streamer_get_playing_track();
-			if (track) {
-				result = g_variant_new_boolean(deadbeef->pl_get_item_duration(track) > 0);
-				deadbeef->pl_item_unref(track);
-			}
-		}
+		result = g_variant_new_boolean(deadbeef_can_seek(deadbeef));
 	} else if (strcmp(propertyName, "CanControl") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	}
@@ -632,16 +637,7 @@ void emitPlaybackStatusChanged(int status, struct MprisData *userData) {
 			break;
 	}
 
-	gboolean can_seek = FALSE;
-	DB_output_t *output = deadbeef->get_output();
-	if (output) {
-		DB_playItem_t *track = deadbeef->streamer_get_playing_track();
-		if (track) {
-			can_seek = deadbeef->pl_get_item_duration(track) > 0;
-			deadbeef->pl_item_unref(track);
-		}
-	}
-	g_variant_builder_add(builder, "{sv}", "CanSeek", g_variant_new_boolean(can_seek));
+	g_variant_builder_add(builder, "{sv}", "CanSeek", g_variant_new_boolean(deadbeef_can_seek(deadbeef)));
 
 
 	GVariant *signal[] = {
