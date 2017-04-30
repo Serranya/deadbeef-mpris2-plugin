@@ -20,7 +20,7 @@ void stopServer(void);
 void emitVolumeChanged(float);
 void emitSeeked(float);
 void emitMetadataChanged(int, struct MprisData*);
-void emitPlaybackStatusChanged(int, struct MprisData *);
+void emitPlaybackStatusChanged(int, struct MprisData*);
 void emitLoopStatusChanged(int);
 void emitShuffleStatusChanged(int);
 
