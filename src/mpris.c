@@ -66,6 +66,11 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 		case DB_EV_TRACKINFOCHANGED:
 			debug("DB_EV_TRACKINFOCHANGED event received");
 			emitMetadataChanged(-1, &mprisData);
+			emitCanGoChanged(&mprisData);
+			break;
+		case DB_EV_SELCHANGED:
+		case DB_EV_PLAYLISTSWITCHED:
+			emitCanGoChanged(&mprisData);
 			break;
 		case DB_EV_SONGSTARTED:
 			debug("DB_EV_SONGSTARTED event received");

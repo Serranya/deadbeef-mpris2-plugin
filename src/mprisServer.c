@@ -267,6 +267,31 @@ gboolean deadbeef_can_seek(DB_functions_t *deadbeef) {
 	return can_seek;
 }
 
+static DB_playItem_t * deadbeef_getselectedorplayingtrack(struct MprisData *userData, int offset) {
+	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
+	ddb_playlist_t *pl;
+	DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track();
+	int idx;
+	if (playing_track) {
+		pl = deadbeef->plt_get_for_idx(deadbeef->streamer_get_current_playlist());
+		if (pl) {
+			idx = deadbeef->plt_get_item_idx(pl, playing_track, PL_MAIN) + offset;
+		}
+	} else {
+		pl = deadbeef->plt_get_curr();
+		if (pl) {
+			idx = deadbeef->plt_get_cursor(pl, PL_MAIN) + offset;
+		}
+	}
+
+	if (pl) {
+		DB_playItem_t *track = deadbeef->plt_get_item_for_idx(pl, idx, PL_MAIN);
+		deadbeef->plt_unref(pl);
+		return track;
+	}
+	return NULL;
+}
+
 static void onRootMethodCallHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
                                     const char *interfaceName, const char *methodName, GVariant *parameters,
                                     GDBusMethodInvocation *invocation, void *userData) {
@@ -515,11 +540,11 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			deadbeef->pl_item_unref(track);
 		}
 	} else if (strcmp(propertyName, "CanGoNext") == 0) {
-		result = g_variant_new_boolean(TRUE);
+		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 1) != NULL);
 	} else if (strcmp(propertyName, "CanGoPrevious") == 0) {
-		result = g_variant_new_boolean(TRUE);
+		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, -1) != NULL);
 	} else if (strcmp(propertyName, "CanPlay") == 0) {
-		result = g_variant_new_boolean(TRUE);
+		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 0) != NULL);
 	} else if (strcmp(propertyName, "CanPause") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanSeek") == 0) {
@@ -614,6 +639,26 @@ void emitMetadataChanged(int trackId, struct MprisData *userData) {
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 
 	g_variant_builder_add(builder, "{sv}", "Metadata", getMetadataForTrack(trackId, userData));
+
+	GVariant *signal[] = {
+			g_variant_new_string(PLAYER_INTERFACE),
+			g_variant_builder_end(builder),
+			g_variant_new_strv(NULL, 0)
+	};
+
+	g_dbus_connection_emit_signal(globalConnection, NULL, OBJECT_NAME, PROPERTIES_INTERFACE, "PropertiesChanged",
+                                  g_variant_new_tuple(signal, 3), NULL);
+
+	g_variant_builder_unref(builder);
+}
+
+void emitCanGoChanged(struct MprisData *userData) {
+	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
+
+	g_variant_builder_add(builder, "{sv}", "CanPlay", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 0) != NULL));
+	g_variant_builder_add(builder, "{sv}", "CanGoNext", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 1) != NULL));
+	g_variant_builder_add(builder, "{sv}", "CanGoPrevious", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, -1) != NULL));
+
 	GVariant *signal[] = {
 			g_variant_new_string(PLAYER_INTERFACE),
 			g_variant_builder_end(builder),
