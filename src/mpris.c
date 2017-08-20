@@ -56,7 +56,6 @@ static int onConnect() {
 //* - Shuffle status    *
 //***********************
 static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
-	static int lastState = -1;
 	DB_functions_t *deadbeef = mprisData.deadbeef;
 
 	switch (id) {
@@ -71,24 +70,11 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 		case DB_EV_SONGSTARTED:
 			debug("DB_EV_SONGSTARTED event received");
 			emitMetadataChanged(-1, &mprisData);
-			emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING, &mprisData);
+			emitPlaybackStatusChanged(OUTPUT_STATE_PLAYING, &mprisData);
 			break;
 		case DB_EV_PAUSED:
 			debug("DB_EV_PAUSED event received");
-			debug("PlayPause toggled... last state %d", lastState);
-			switch (lastState) {
-				case -1:
-					emitPlaybackStatusChanged(lastState = deadbeef->get_output()->state(), &mprisData);
-					break;
-				case OUTPUT_STATE_PLAYING:
-					emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PAUSED, &mprisData);
-					break;
-				case OUTPUT_STATE_PAUSED:
-					emitPlaybackStatusChanged(lastState = OUTPUT_STATE_PLAYING, &mprisData);
-					break;
-				default:
-					break;
-			}
+			emitPlaybackStatusChanged(p1 ? OUTPUT_STATE_PAUSED : OUTPUT_STATE_PLAYING, &mprisData);
 			break;
 		case DB_EV_STOP:
 			debug("DB_EV_STOP event received");
