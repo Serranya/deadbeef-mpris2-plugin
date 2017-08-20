@@ -467,6 +467,8 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 				result = g_variant_new_string("Stopped");
 				break;
 			}
+		} else {
+			result = g_variant_new_string("Stopped");
 		}
 	} else if (strcmp(propertyName, "LoopStatus") == 0) {
 		int loop = deadbeef->conf_get_int("playback.loop", PLAYBACK_MODE_LOOP_ALL);
