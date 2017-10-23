@@ -22,6 +22,7 @@ LT_INIT
 
 PKG_CHECK_MODULES([GLIB_DEPS], [glib-2.0], , AC_MSG_ERROR([glibc-2 is required for this package]))
 PKG_CHECK_MODULES([GIO_DEPS], [gio-2.0], , AC_MSG_ERROR([gio-2 is required for this package]))
+PKG_CHECK_MODULES([GIOUNIX_DEPS], [gio-unix-2.0], , AC_MSG_ERROR([gio-unix-2 is required for this package]))
 PKG_CHECK_MODULES([GTHREAD_DEPS], [gthread-2.0], , AC_MSG_ERROR([gthread-2 is required for this package]))
 
 AS_IF([test "x$ac_cv_prog_cc_c99" = "xno"], AC_MSG_ERROR([C99 Support is required]))

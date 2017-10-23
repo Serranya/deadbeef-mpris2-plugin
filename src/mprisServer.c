@@ -302,6 +302,8 @@ static void onRootMethodCallHandler(GDBusConnection *connection, const char *sen
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_TERMINATE, 0, 0, 0);
 	} else if (strcmp(methodName, "Raise") == 0) {
+		GDesktopAppInfo *dskapp = g_desktop_app_info_new ("deadbeef.desktop");
+		g_app_info_launch ((GAppInfo *) dskapp, NULL, NULL, NULL);
 		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else {
 		debug("Error! Unsupported method. %s.%s", interfaceName, methodName);
@@ -319,7 +321,7 @@ static GVariant* onRootGetPropertyHandler(GDBusConnection *connection, const cha
 	if (strcmp(propertyName, "CanQuit") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanRaise") == 0) {
-		result = g_variant_new_boolean(FALSE);
+		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "HasTrackList") == 0) {
 		result = g_variant_new_boolean(FALSE);
 	} else if (strcmp(propertyName, "Identity") == 0) {

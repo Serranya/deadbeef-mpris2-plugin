@@ -2,6 +2,7 @@
 #define MPRISSERVER_H_
 
 #include <gio/gio.h>
+#include <gio/gdesktopappinfo.h>
 
 #define DDB_API_LEVEL 7
 #define DDB_WARN_DEPRECATED 1
