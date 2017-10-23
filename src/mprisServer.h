@@ -23,5 +23,6 @@ void emitMetadataChanged(int, struct MprisData*);
 void emitPlaybackStatusChanged(int, struct MprisData*);
 void emitLoopStatusChanged(int);
 void emitShuffleStatusChanged(int);
+void emitCanGoChanged(struct MprisData *);
 
 #endif
