@@ -267,7 +267,7 @@ gboolean deadbeef_can_seek(DB_functions_t *deadbeef) {
 	return can_seek;
 }
 
-static DB_playItem_t * deadbeef_getselectedorplayingtrack(struct MprisData *userData, int offset) {
+static gboolean deadbeef_hasselectedorplayingtrack(struct MprisData *userData, int offset) {
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
 	ddb_playlist_t *pl;
 	DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track();
@@ -277,6 +277,7 @@ static DB_playItem_t * deadbeef_getselectedorplayingtrack(struct MprisData *user
 		if (pl) {
 			idx = deadbeef->plt_get_item_idx(pl, playing_track, PL_MAIN) + offset;
 		}
+		deadbeef->pl_item_unref(playing_track);
 	} else {
 		pl = deadbeef->plt_get_curr();
 		if (pl) {
@@ -287,9 +288,12 @@ static DB_playItem_t * deadbeef_getselectedorplayingtrack(struct MprisData *user
 	if (pl) {
 		DB_playItem_t *track = deadbeef->plt_get_item_for_idx(pl, idx, PL_MAIN);
 		deadbeef->plt_unref(pl);
-		return track;
+		if (track) {
+			deadbeef->pl_item_unref(track);
+			return TRUE;
+		}
 	}
-	return NULL;
+	return FALSE;
 }
 
 static void onRootMethodCallHandler(GDBusConnection *connection, const char *sender, const char *objectPath,
@@ -540,11 +544,11 @@ static GVariant* onPlayerGetPropertyHandler(GDBusConnection *connection, const c
 			deadbeef->pl_item_unref(track);
 		}
 	} else if (strcmp(propertyName, "CanGoNext") == 0) {
-		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 1) != NULL);
+		result = g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, 1));
 	} else if (strcmp(propertyName, "CanGoPrevious") == 0) {
-		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, -1) != NULL);
+		result = g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, -1));
 	} else if (strcmp(propertyName, "CanPlay") == 0) {
-		result = g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 0) != NULL);
+		result = g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, 0));
 	} else if (strcmp(propertyName, "CanPause") == 0) {
 		result = g_variant_new_boolean(TRUE);
 	} else if (strcmp(propertyName, "CanSeek") == 0) {
@@ -655,9 +659,9 @@ void emitMetadataChanged(int trackId, struct MprisData *userData) {
 void emitCanGoChanged(struct MprisData *userData) {
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE_ARRAY);
 
-	g_variant_builder_add(builder, "{sv}", "CanPlay", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 0) != NULL));
-	g_variant_builder_add(builder, "{sv}", "CanGoNext", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, 1) != NULL));
-	g_variant_builder_add(builder, "{sv}", "CanGoPrevious", g_variant_new_boolean(deadbeef_getselectedorplayingtrack(userData, -1) != NULL));
+	g_variant_builder_add(builder, "{sv}", "CanPlay", g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, 0)));
+	g_variant_builder_add(builder, "{sv}", "CanGoNext", g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, 1)));
+	g_variant_builder_add(builder, "{sv}", "CanGoPrevious", g_variant_new_boolean(deadbeef_hasselectedorplayingtrack(userData, -1)));
 
 	GVariant *signal[] = {
 			g_variant_new_string(PLAYER_INTERFACE),
