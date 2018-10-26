@@ -86,7 +86,7 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 	int id;
 	DB_playItem_t *track = NULL;
 	DB_functions_t *deadbeef = mprisData->deadbeef;
-	ddb_playlist_t *pl;
+	ddb_playlist_t *pl = NULL;
 	GVariant *tmp;
 	GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
 	int playlistIndex;
@@ -269,7 +269,7 @@ gboolean deadbeef_can_seek(DB_functions_t *deadbeef) {
 
 static gboolean deadbeef_hasselectedorplayingtrack(struct MprisData *userData, int offset) {
 	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
-	ddb_playlist_t *pl;
+	ddb_playlist_t *pl = NULL;
 	DB_playItem_t *playing_track = deadbeef->streamer_get_playing_track();
 	int idx;
 	if (playing_track) {
