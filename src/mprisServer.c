@@ -307,7 +307,12 @@ static void onRootMethodCallHandler(GDBusConnection *connection, const char *sen
 		deadbeef->sendmessage(DB_EV_TERMINATE, 0, 0, 0);
 	} else if (strcmp(methodName, "Raise") == 0) {
 		GDesktopAppInfo *dskapp = g_desktop_app_info_new ("deadbeef.desktop");
-		g_app_info_launch ((GAppInfo *) dskapp, NULL, NULL, NULL);
+		if (dskapp) {
+			g_app_info_launch ((GAppInfo *) dskapp, NULL, NULL, NULL);
+			g_object_unref (dskapp);
+		} else {
+			deadbeef->sendmessage (DB_EV_ACTIVATED, 0, 0, 0);
+		}
 		g_dbus_method_invocation_return_value(invocation, NULL);
 	} else {
 		debug("Error! Unsupported method. %s.%s", interfaceName, methodName);
