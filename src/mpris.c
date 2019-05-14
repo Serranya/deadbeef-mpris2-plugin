@@ -67,6 +67,7 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 			debug("DB_EV_TRACKINFOCHANGED event received");
 			emitMetadataChanged(-1, &mprisData);
 			emitCanGoChanged(&mprisData);
+			emitSeeked(deadbeef->streamer_get_playpos());
 			break;
 		case DB_EV_SELCHANGED:
 		case DB_EV_PLAYLISTSWITCHED:
