@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -16,6 +17,15 @@
 #define PLAYER_INTERFACE "org.mpris.MediaPlayer2.Player"
 #define PROPERTIES_INTERFACE "org.freedesktop.DBus.Properties"
 #define CURRENT_TRACK -1
+
+typedef GVariant* (*ProduceVariantCb)(const char *valueStr);
+
+struct MetaFormatRecord {
+	const char *fieldName;
+	const char *valueFormat;
+	const ProduceVariantCb produceVariantCb;
+	char *bytecode;
+};
 
 static const char xmlForNode[] =
 	"<node name='/org/mpris/MediaPlayer2'>"
@@ -75,6 +85,85 @@ static const char xmlForNode[] =
 static GDBusConnection *globalConnection = NULL;
 static GMainLoop *loop;
 
+static gboolean bytecodeCompiled;
+
+static GVariant* produceScalarString(const char *valueStr) {
+	return g_variant_new_string(valueStr);
+}
+
+static GVariant* produceSingleStringArray(const char *valueStr) {
+	GVariantBuilder arrayBuilder;
+	g_variant_builder_init(&arrayBuilder, G_VARIANT_TYPE("as"));
+
+	g_variant_builder_add(&arrayBuilder, "s", valueStr);
+
+	return g_variant_builder_end(&arrayBuilder);
+}
+
+static GVariant* produceScalarInt(const char *valueStr) {
+	gint32 value = atoi(valueStr);
+
+	if (value <= 0) {
+		return NULL;
+	}
+
+	return g_variant_new_int32(value);
+}
+
+static char* chompCr(char *str) {
+	size_t len = strlen(str);
+
+	if (len > 0 && str[len - 1] == '\r') {
+		str[len - 1] = '\0';
+	}
+
+	return str;
+}
+
+static GVariant* produceArrayOfTokens(const char *valueStr) {
+	char **tokens = g_strsplit(valueStr, "\n", -1);
+
+	GVariantBuilder arrayBuilder;
+	g_variant_builder_init(&arrayBuilder, G_VARIANT_TYPE("as"));
+
+	for (char **token = tokens; *token; token++) {
+		g_variant_builder_add(&arrayBuilder, "s", chompCr(*token));
+	}
+
+	g_strfreev(tokens);
+
+	return g_variant_builder_end(&arrayBuilder);
+}
+
+static struct MetaFormatRecord metaFormatRecords[] = {
+	{ "xesam:title",          "%title%",                                                 produceScalarString      },
+	{ "xesam:album",          "%album%",                                                 produceScalarString      },
+	{ "xesam:artist",         "$if(%artist%,%artist%,Unknown Artist)",                   produceSingleStringArray },
+	{ "xesam:albumArtist",    "%album artist%",                                          produceSingleStringArray },
+	{ "xesam:trackNumber",    "%track number%",                                          produceScalarInt         },
+	{ "xesam:genre",          "%genre%",                                                 produceArrayOfTokens     },
+	{ "xesam:contentCreated", "%date%",                                                  produceScalarString      }, //TODO format date
+	{ "xesam:asText",         "$meta(unsynced lyrics)",                                  produceScalarString      },
+	{ "xesam:comment",        "$meta(comment)",                                          produceSingleStringArray },
+	{ "xesam:url",            "$if($strcmp($left(%_path_raw%,1),/),file://)%_path_raw%", produceScalarString      },
+	{ NULL                                                                                                        }
+};
+
+static void compileTfBytecode(DB_functions_t *deadbeef) {
+	debug("Compiling tf bytecode");
+	for (struct MetaFormatRecord *record = metaFormatRecords; record->fieldName; record++) {
+		record->bytecode = deadbeef->tf_compile(record->valueFormat);
+		assert(record->bytecode);
+	}
+}
+
+static void freeTfBytecode(DB_functions_t *deadbeef) {
+	debug("Freeing tf bytecode");
+	for (struct MetaFormatRecord *record = metaFormatRecords; record->fieldName; record++) {
+		deadbeef->tf_free(record->bytecode);
+	}
+}
+
 static void coverartCallback(const char *fname, const char *artist, const char *album, void *userData) {
 	if (fname != NULL) { // cover was not ready
 		debug("Async loaded cover for %s", album);
@@ -106,19 +195,8 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		int buf_size = sizeof(buf);
 		int64_t duration = deadbeef->pl_get_item_duration(track) * 1000000;
 		const char *album = deadbeef->pl_find_meta(track, "album");
-		const char *albumArtist = deadbeef->pl_find_meta(track, "albumartist");
-		if (albumArtist == NULL)
-			albumArtist = deadbeef->pl_find_meta(track, "album artist");
-		if (albumArtist == NULL)
-			albumArtist = deadbeef->pl_find_meta(track, "band");
 		const char *artist = deadbeef->pl_find_meta(track, "artist");
-		const char *lyrics = deadbeef->pl_find_meta(track, "lyrics");
-		const char *comment = deadbeef->pl_find_meta(track, "comment");
-		const char *date = deadbeef->pl_find_meta_raw(track, "year");
-		const char *title = deadbeef->pl_find_meta(track, "title");
-		const char *trackNumber = deadbeef->pl_find_meta(track, "track");
 		const char *uri = deadbeef->pl_find_meta(track, ":URI");
-		const char *genres = deadbeef->pl_find_meta(track, "genre");
 
 		deadbeef->pl_lock();
 
@@ -129,27 +207,6 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 		debug("get Metadata duration: %" PRId64, duration);
 		if (duration > 0) {
 			g_variant_builder_add(builder, "{sv}", "mpris:length", g_variant_new("x", duration));
-		}
-
-		debug("get Metadata album: %s", album);
-		if (album != NULL) {
-			g_variant_builder_add(builder, "{sv}", "xesam:album", g_variant_new("s", album));
-		}
-
-		debug("get Metadata albumArtist: %s", albumArtist);
-		if (albumArtist != NULL) {
-			GVariantBuilder *albumArtistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-			g_variant_builder_add(albumArtistBuilder, "s", albumArtist);
-			g_variant_builder_add(builder, "{sv}", "xesam:albumArtist", g_variant_builder_end(albumArtistBuilder));
-			g_variant_builder_unref(albumArtistBuilder);
-		}
-
-		debug("get Metadata artist: %s", artist);
-		if (artist != NULL) {
-			GVariantBuilder *artistBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-			g_variant_builder_add(artistBuilder, "s", artist);
-			g_variant_builder_add(builder, "{sv}", "xesam:artist", g_variant_builder_end(artistBuilder));
-			g_variant_builder_unref(artistBuilder);
 		}
 
 		if (mprisData->artwork != NULL) {
@@ -183,64 +240,48 @@ GVariant* getMetadataForTrack(int track_id, struct MprisData *mprisData) {
 			}
 		}
 
-		debug("get Metadata lyrics: %s", lyrics);
-		if (lyrics != NULL) {
-			g_variant_builder_add(builder, "{sv}", "xesam:asText", g_variant_new("s", lyrics));
+		// init on first access
+		if (!bytecodeCompiled) {
+			compileTfBytecode(deadbeef);
+			bytecodeCompiled = TRUE;
 		}
 
-		debug("get Metadata comment: %s", comment);
-		if (comment != NULL) {
-			GVariantBuilder *commentBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-			g_variant_builder_add(commentBuilder, "s", comment);
-			g_variant_builder_add(builder, "{sv}", "xesam:comment", g_variant_builder_end(commentBuilder));
-			g_variant_builder_unref(commentBuilder);
-		}
+		for (struct MetaFormatRecord *record = metaFormatRecords; record->fieldName; record++) {
+			assert(record->valueFormat);
+			assert(record->produceVariantCb);
+			assert(record->bytecode);
 
-		if (date == NULL)
-			date = deadbeef->pl_find_meta(track, "date");
-		debug("get Metadata contentCreated: %s", date); //TODO format date
-		if (date != NULL) {
-			g_variant_builder_add(builder, "{sv}", "xesam:contentCreated", g_variant_new("s", date));
-		}
+			ddb_tf_context_t ctx = {
+				sizeof(ddb_tf_context_t),
+				DDB_TF_CONTEXT_NO_DYNAMIC | DDB_TF_CONTEXT_MULTILINE,
+				track,
+				NULL,
+				0,
+				0,
+				PL_MAIN,
+				0
+			};
 
-		debug("get Metdata genres: %s", genres);
-		if (genres != NULL) {
-			char *genresCpy = malloc(strlen(genres) + 1);
-			strcpy(genresCpy, genres);
-			GVariantBuilder *genreBuilder = g_variant_builder_new(G_VARIANT_TYPE("as"));
-
-			char *genre = strtok(genresCpy, "\n");
-
-			while (genre != NULL) {
-				debug("genre is %s with length %d", genre, strlen(genre));
-				g_variant_builder_add(genreBuilder, "s", genre);
-				genre = strtok(NULL, "\n");
+			if (deadbeef->tf_eval(&ctx, record->bytecode, buf, buf_size) < 0) {
+				error("failed to produce string for field %s", record->fieldName);
+				continue;
 			}
 
-			g_variant_builder_add(builder, "{sv}", "xesam:genre", g_variant_builder_end(genreBuilder));
-			g_variant_builder_unref(genreBuilder);
-			free(genresCpy);
-		}
-
-		debug("get Metadata title: %s", title);
-		if (title != NULL) {
-			g_variant_builder_add(builder, "{sv}", "xesam:title", g_variant_new("s", title));
-		}
-
-		debug("get Metadata trackNumber: %s", trackNumber);
-		if (trackNumber != NULL) {
-			int trackNumberAsInt = atoi(trackNumber);
-			if (trackNumberAsInt > 0) {
-				g_variant_builder_add(builder, "{sv}", "xesam:trackNumber", g_variant_new("i", trackNumberAsInt));
+			if (g_str_equal(buf, "")) {
+				debug("resulting string is empty, skipping %s field", record->fieldName);
+				continue;
 			}
-		}
 
-		char *fullUri = malloc(strlen(uri) + 7 + 1); // strlen(uri) + strlen("file://") + \0
-		strcpy(fullUri, "file://");
-		strcpy(fullUri + 7, uri);
-		debug("get Metadata URI: %s", fullUri);
-		g_variant_builder_add(builder, "{sv}", "xesam:url", g_variant_new("s", fullUri));
-		free(fullUri);
+			debug("got string '%s' for field %s", buf, record->fieldName);
+
+			GVariant *variant = record->produceVariantCb(buf);
+			if (!variant) {
+				debug("can't convert string '%s' to proper variant, skipping %s field", buf, record->fieldName);
+				continue;
+			}
+
+			g_variant_builder_add(builder, "{sv}", record->fieldName, variant);
+		}
 
 		deadbeef->pl_unlock();
 		deadbeef->pl_item_unref(track);
@@ -798,6 +839,8 @@ void* startServer(void *data) {
 	g_bus_unown_name(ownerId);
 	g_dbus_node_info_unref(mprisData->gdbusNodeInfo);
 	g_main_loop_unref(loop);
+
+	freeTfBytecode(mprisData->deadbeef);
 
 	return 0;
 }
