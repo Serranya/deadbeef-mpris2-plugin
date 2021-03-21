@@ -424,14 +424,20 @@ static void onPlayerMethodCallHandler(GDBusConnection *connection, const char *s
                                       GDBusMethodInvocation *invocation, void *userData) {
 	debug("Method call on Player interface. sender: %s, methodName %s", sender, methodName);
 	debug("Parameter signature is %s", g_variant_get_type_string (parameters));
-	DB_functions_t *deadbeef = ((struct MprisData *)userData)->deadbeef;
+	struct MprisData *mprisData = (struct MprisData *)userData;
+	DB_functions_t *deadbeef = mprisData->deadbeef;
 
 	if (strcmp(methodName, "Next") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_NEXT, 0, 0, 0);
 	} else if (strcmp(methodName, "Previous") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
-		deadbeef->sendmessage(DB_EV_PREV, 0, 0, 0);
+
+		if (mprisData->previousAction == PREVIOUS_ACTION_PREV_OR_RESTART && mprisData->prevOrRestart && mprisData->prevOrRestart->callback2 != NULL) {
+			mprisData->prevOrRestart->callback2(mprisData->prevOrRestart, DDB_ACTION_CTX_MAIN);
+		} else {
+			deadbeef->sendmessage(DB_EV_PREV, 0, 0, 0);
+		}
 	} else if (strcmp(methodName, "Pause") == 0) {
 		g_dbus_method_invocation_return_value(invocation, NULL);
 		deadbeef->sendmessage(DB_EV_PAUSE, 0, 0, 0);

@@ -12,6 +12,7 @@ static int oldShuffleStatus = -1;
 static int onStart() {
 	oldLoopStatus = mprisData.deadbeef->conf_get_int("playback.loop", 0);
 	oldShuffleStatus = mprisData.deadbeef->conf_get_int("playback.order", PLAYBACK_ORDER_LINEAR);
+	mprisData.previousAction = mprisData.deadbeef->conf_get_int(SETTING_PREVIOUS_ACTION, PREVIOUS_ACTION_PREV_OR_RESTART);
 
 #if (GLIB_MAJOR_VERSION <= 2 && GLIB_MINOR_VERSION < 32)
 	mprisThread = g_thread_create(startServer, (void *)&mprisData, TRUE, NULL);
@@ -34,6 +35,9 @@ static int onStop() {
 }
 
 static int onConnect() {
+	mprisData.artwork = NULL;
+	mprisData.prevOrRestart = NULL;
+
 	DB_artwork_plugin_t *artworkPlugin = (DB_artwork_plugin_t *)mprisData.deadbeef->plug_get_for_id ("artwork");
 
 	if (artworkPlugin != NULL) {
@@ -41,6 +45,28 @@ static int onConnect() {
 		mprisData.artwork = artworkPlugin;
 	} else {
 		debug("artwork plugin not detected... album art support disabled");
+	}
+
+	DB_plugin_t *hotkeysPlugin = mprisData.deadbeef->plug_get_for_id ("hotkeys");
+
+	if (hotkeysPlugin != NULL) {
+		debug("hotkeys plugin detected...");
+
+		DB_plugin_action_t *dbaction;
+
+		for (dbaction = hotkeysPlugin->get_actions (NULL); dbaction; dbaction = dbaction->next) {
+			if (strcmp(dbaction->name, "prev_or_restart") == 0) {
+				debug("prev_or_restart command detected... previous or restart support enabled");
+				mprisData.prevOrRestart = dbaction;
+				break;
+			}
+		}
+
+		if (mprisData.prevOrRestart == NULL) {
+			debug("prev_or_restart command not detected... previous or restart support disabled");
+		}
+	} else {
+		debug("hotkeys plugin not detected... previous or restart support disabled");
 	}
 
 	return 0;
@@ -103,6 +129,8 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 					debug("ShuffleStatus changed %d", newShuffleStatus);
 					emitShuffleStatusChanged(oldShuffleStatus = newShuffleStatus);
 				}
+
+				mprisData.previousAction = mprisData.deadbeef->conf_get_int(SETTING_PREVIOUS_ACTION, PREVIOUS_ACTION_PREV_OR_RESTART);
 			}
 			break;
 		default:
@@ -111,6 +139,13 @@ static int handleEvent (uint32_t id, uintptr_t ctx, uint32_t p1, uint32_t p2) {
 
 	return 0;
 }
+
+#define STR(x) #x
+#define XSTR(x) STR(x)
+
+static const char settings_dlg[] =
+	"property \"\\\"Previous\\\" action behavior\" select[2] " SETTING_PREVIOUS_ACTION " " XSTR(PREVIOUS_ACTION_PREV_OR_RESTART) " \"Previous\" \"Previous or restart current track\";";
+
 
 DB_misc_t plugin = {
 	.plugin.api_vmajor = DB_API_VERSION_MAJOR,\
@@ -143,7 +178,7 @@ DB_misc_t plugin = {
 	.plugin.stop = onStop,
 	.plugin.connect = onConnect,
 	.plugin.disconnect = NULL,
-	.plugin.configdialog = NULL,
+	.plugin.configdialog = settings_dlg,
 	.plugin.message = handleEvent,
 };
 

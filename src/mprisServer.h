@@ -9,10 +9,16 @@
 #include <deadbeef/deadbeef.h>
 #include "artwork.h"
 
+#define SETTING_PREVIOUS_ACTION "mpris2.previous_action"
+#define PREVIOUS_ACTION_PREVIOUS 0
+#define PREVIOUS_ACTION_PREV_OR_RESTART 1
+
 struct MprisData {
 	DB_functions_t *deadbeef;
 	DB_artwork_plugin_t *artwork;
+	DB_plugin_action_t *prevOrRestart;
 	GDBusNodeInfo *gdbusNodeInfo;
+	int previousAction;
 };
 
 void* startServer(void*);
