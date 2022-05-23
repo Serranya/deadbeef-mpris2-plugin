@@ -173,7 +173,7 @@ DB_misc_t plugin = {
 			"along with this program; if not, write to the Free Software\n"
 			"Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n"
 	,
-	.plugin.website = "https://github.com/Serranya/deadbeef-mpris2-plugin",
+	.plugin.website = "https://github.com/DeaDBeeF-Player/deadbeef-mpris2-plugin",
 	.plugin.start = onStart,
 	.plugin.stop = onStop,
 	.plugin.connect = onConnect,
