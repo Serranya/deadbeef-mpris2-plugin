@@ -7,15 +7,23 @@
 #define DDB_API_LEVEL 9
 #define DDB_WARN_DEPRECATED 1
 #include <deadbeef/deadbeef.h>
-#include "artwork.h"
+#include <deadbeef/artwork.h>
 
 #define SETTING_PREVIOUS_ACTION "mpris2.previous_action"
 #define PREVIOUS_ACTION_PREVIOUS 0
 #define PREVIOUS_ACTION_PREV_OR_RESTART 1
 
+typedef struct ArtworkData_s {
+	ddb_artwork_plugin_t *artwork;
+	int64_t source_id;
+	DB_playItem_t *track;
+	char *path;
+	char *default_path;
+} ArtworkData_t;
+
 struct MprisData {
 	DB_functions_t *deadbeef;
-	DB_artwork_plugin_t *artwork;
+	ArtworkData_t artworkData;
 	DB_plugin_action_t *prevOrRestart;
 	GDBusNodeInfo *gdbusNodeInfo;
 	int previousAction;

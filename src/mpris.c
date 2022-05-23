@@ -31,18 +31,41 @@ static int onStop() {
 	g_thread_unref(mprisThread);
 #endif
 
+	if (mprisData.artworkData.artwork) {
+		ArtworkData_t *art_data = &(mprisData.artworkData);
+		free(mprisData.artworkData.path);
+		free(mprisData.artworkData.default_path);
+		mprisData.artworkData.path = NULL;
+		mprisData.artworkData.default_path = NULL;
+	}
+
 	return 0;
 }
 
+static int onDisconnect() {
+	if (mprisData.artworkData.artwork) {
+		mprisData.artworkData.artwork->cancel_queries_with_source_id(mprisData.artworkData.source_id);
+	}
+}
+
 static int onConnect() {
-	mprisData.artwork = NULL;
 	mprisData.prevOrRestart = NULL;
 
-	DB_artwork_plugin_t *artworkPlugin = (DB_artwork_plugin_t *)mprisData.deadbeef->plug_get_for_id ("artwork");
+	ddb_artwork_plugin_t *artworkPlugin = (ddb_artwork_plugin_t *)mprisData.deadbeef->plug_get_for_id ("artwork2");
 
 	if (artworkPlugin != NULL) {
 		debug("artwork plugin detected... album art support enabled");
-		mprisData.artwork = artworkPlugin;
+		if (artworkPlugin) {
+			mprisData.artworkData.artwork = artworkPlugin;
+			mprisData.artworkData.source_id = artworkPlugin->allocate_source_id();
+			mprisData.artworkData.path = NULL;
+			mprisData.artworkData.default_path = malloc(PATH_MAX);
+			if (mprisData.artworkData.default_path) {
+				strcpy(mprisData.artworkData.default_path,"file://");
+				size_t offset = strlen("file://");
+				artworkPlugin->default_image_path(mprisData.artworkData.default_path + offset, PATH_MAX - offset);
+			}
+		}
 	} else {
 		debug("artwork plugin not detected... album art support disabled");
 	}
@@ -177,7 +200,7 @@ DB_misc_t plugin = {
 	.plugin.start = onStart,
 	.plugin.stop = onStop,
 	.plugin.connect = onConnect,
-	.plugin.disconnect = NULL,
+	.plugin.disconnect = onDisconnect,
 	.plugin.configdialog = settings_dlg,
 	.plugin.message = handleEvent,
 };
