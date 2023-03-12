@@ -1,6 +1,10 @@
 MPRISv2 plugin for the DeaDBeeF music player
 ============================================
 
+This plugin is outdated and not longer maintained.
+Please use the fork over at:
+https://github.com/DeaDBeeF-Player/deadbeef-mpris2-plugin
+
 ===== About ======
 This plugin aims to implement the MPRISv2[1] for DeaDBeeF.
 
